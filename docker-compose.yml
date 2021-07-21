@@ -7,7 +7,7 @@ services:
             context: ./services/data-service-1
             dockerfile: Dockerfile
         ports: 
-            - "9200:80"
+            - "9200:9200"
         environment: 
             - PORT=9200
 
@@ -17,7 +17,7 @@ services:
             context: ./services/data-service-2
             dockerfile: Dockerfile
         ports: 
-            - "9300:80"
+            - "9300:9300"
         environment: 
             - PORT=9300
 
@@ -27,7 +27,7 @@ services:
             context: ./services/compiler-service
             dockerfile: Dockerfile
         ports: 
-            - "9400:80"
+            - "9400:9400"
         environment: 
             - PORT=9400
         depends_on: 
