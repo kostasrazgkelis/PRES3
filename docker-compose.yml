@@ -1,0 +1,36 @@
+version: '3'
+
+services: 
+    cluster-a:
+        container_name: cluster-a
+        build: 
+            context: ./services/data-service-1
+            dockerfile: Dockerfile
+        ports: 
+            - "9200:80"
+        environment: 
+            - PORT=9200
+
+    cluster-b:
+        container_name: cluster-b
+        build: 
+            context: ./services/data-service-2
+            dockerfile: Dockerfile
+        ports: 
+            - "9300:80"
+        environment: 
+            - PORT=9300
+
+    cluster-c:
+        container_name: cluster-c
+        build: 
+            context: ./services/compiler-service
+            dockerfile: Dockerfile
+        ports: 
+            - "9400:80"
+        environment: 
+            - PORT=9400
+        depends_on: 
+            - cluster-a
+            - cluster-b
+
