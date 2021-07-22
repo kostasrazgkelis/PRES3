@@ -34,8 +34,8 @@ def connect(URL):
 def start_connection():
 
     URLs = [    
-                'cluster-a:9400'
-                'cluster-b:9401'
+                'cluster-a:9200'
+                'cluster-b:9300'
             ]
     
     try:
