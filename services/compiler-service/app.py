@@ -29,12 +29,11 @@ def connect(URL):
         return request
 
 
-
 @app.route("/connect_clusters", methods=["GET"])
 def start_connection():
 
     URLs = [    
-                'cluster-a:9200'
+                'cluster-a:9200',
                 'cluster-b:9300'
             ]
     
