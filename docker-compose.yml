@@ -10,6 +10,9 @@ services:
             - "9200:9200"
         environment: 
             - PORT=9200
+        volumes: 
+            - cluster-A-volume:/var/lib/data
+
 
     cluster-b:
         container_name: cluster-b
@@ -20,6 +23,8 @@ services:
             - "9300:9300"
         environment: 
             - PORT=9300
+        volumes: 
+            - cluster-B-volume:/var/lib/data
 
     cluster-c:
         container_name: cluster-c
@@ -33,6 +38,10 @@ services:
         depends_on: 
             - cluster-a
             - cluster-b
+        environment: 
+            - PORT=9300
+        volumes: 
+            - cluster-C-volume:/var/lib/data 
 
     jupyterlab:
         container_name: jupyterlab
@@ -61,3 +70,9 @@ services:
             - "8081:8081"
         environment:
             - "SPARK_MASTER=spark://spark-master:7077"
+
+volumes: 
+    cluster-A-volume:
+    cluster-B-volume:
+    cluster-C-volume:
+

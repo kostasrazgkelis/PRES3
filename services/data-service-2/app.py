@@ -1,8 +1,7 @@
-from flask import Flask, jsonify, request, render_template , Response, make_response
+from flask import Flask, request, send_file , Response
 import os
-import csv
 import jellyfish
-import io
+import pandas as pd
 
 
 
@@ -11,57 +10,44 @@ PORT = '9300'
 NAME_OF_CLUSTER = "Cluster_B"
 app = Flask(__name__)
     
-name= "asdasd"
-
-list_with_data = [
-    "Greece , GR",
-    "Portugal, PRT",
-    "Italy, ITA",
-    "Great Britain, GB",
-    "Albania, ALB",
-    "Spain, ESP",
-    "Germany, GRM",
-    "Turkey, TRK"
-    
-]
 
 
-def encode_with_soundex(list_with_data):
-    for x in range(len(list_with_data)):
-        country , short = list_with_data[x].split(',')
-        country = jellyfish.soundex(str(country))
-        short = jellyfish.soundex(str(short))
-        list_with_data[x] = country+ ", " + short
-
-
-    
-
+def encode_with_soundex(file):
+    df1 = pd.read_csv(file)
+    df1['soundex'] = df1['data1'].apply(lambda x: jellyfish.soundex(x))
+ 
 @app.route('/')
 def get():
     return f'{NAME_OF_CLUSTER}', 200
 
+
 @app.route("/take_data/", methods=["GET"])
 def post():
-    print(f"{NAME_OF_CLUSTER}- The download has started!")
+    print(f"{NAME_OF_CLUSTER}- Data is being send")
 
     try:
-        fieldnames = ['Country', 'Short']
-        si = io.StringIO()
-        cw = csv.writer(si)
-        encode_with_soundex(list_with_data)
-        
-        for x in list_with_data:
-            cw.writerow(x.split(','))
+        df1 = pd.read_csv("/var/lib/data/B_1k_names_separated.csv", header=0, names=[0,1,2])
+
+        column_1 = df1[0].apply(lambda x: jellyfish.soundex(x))
+        column_2 = df1[1].apply(lambda x: jellyfish.soundex(x))
+        column_3 = df1[2].apply(lambda x: jellyfish.soundex(x))
 
     except Exception as e:
-        print(f"{NAME_OF_CLUSTER}- There was an error!")
+        print(f"{NAME_OF_CLUSTER} - There was an error!")
     else:
-        output = make_response(si.getvalue())
-        output.headers["Content-Disposition"] = "attachment; filename=cluster_B_export.csv"
-        output.headers["Content-type"] = "text/csv"
-        return output
+        # Merge both datasets
+        result = pd.concat([column_1, column_2, column_3], axis=1)
 
+        result.to_csv('\var\lib\data\joined_data.csv', encoding='utf-8', index=False)
+        
+        print(f"{NAME_OF_CLUSTER}- the download has finished")
 
+        return send_file('joined_data.csv',
+                    mimetype='text/csv',
+                    attachment_filename='b_cluster_data.csv',
+                    as_attachment=True)
+
+    
 
 if __name__ == '__main__':
     ENVIRONMENT_DEBUG = os.environ.get("DEBUG", True)

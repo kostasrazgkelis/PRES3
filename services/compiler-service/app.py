@@ -21,6 +21,7 @@ def connect(URL):
         csv_file = open(str(name.text) + "_download.csv", 'wb')
         csv_file.write(url_content)
         csv_file.close()
+        
     except TimeoutError as e :
         print(f"There was a timeout Eroor {e}")
     else:
