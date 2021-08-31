@@ -43,7 +43,7 @@ def post():
         
         print(f"{NAME_OF_CLUSTER}- the download has finished")
 
-        return send_file('joined_data.csv',
+        return send_file('/var/lib/data/joined_data.csv',
                     mimetype='text/csv',
                     attachment_filename='a_cluster_data.csv',
                     as_attachment=True)
