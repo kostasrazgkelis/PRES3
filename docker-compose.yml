@@ -50,6 +50,8 @@ services:
             dockerfile: Dockerfile
         ports:
             - 8888:8888
+        volumes: 
+            - cluster-C-volume:/var/lib/jupyter
 
             
     spark-master:
