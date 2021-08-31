@@ -39,7 +39,7 @@ def post():
         # Merge both datasets
         result = pd.concat([column_1, column_2, column_3], axis=1)
 
-        result.to_csv('\var\lib\data\joined_data.csv', encoding='utf-8', index=False)
+        result.to_csv('/var/lib/data/joined_data.csv', encoding='utf-8', index=False)
         
         print(f"{NAME_OF_CLUSTER}- the download has finished")
 
