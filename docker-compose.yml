@@ -62,6 +62,8 @@ services:
             - "7077:7077"
         environment:
             - INIT_DAEMON_STEP=setup_spark
+        volumes:
+            - cluster-C-volume:/var/lib/jupyter  
 
     spark-worker-1:
         image: bde2020/spark-worker:3.1.1-hadoop3.2
@@ -72,8 +74,10 @@ services:
             - "8081:8081"
         environment:
             - "SPARK_MASTER=spark://spark-master:7077"
-
-volumes: 
+        volumes:
+            - cluster-C-volume:/var/lib/jupyter
+            
+volumes:    
     cluster-A-volume:
     cluster-B-volume:
     cluster-C-volume:
