@@ -45,13 +45,14 @@ services:
 
     jupyterlab:
         container_name: jupyterlab
-        build: 
-            context: ./services/jupyter
-            dockerfile: Dockerfile
+        image: jupyterlab
+        # build: 
+        #     # context: ./services/jupyter
+        #     # dockerfile: Dockerfile
         ports:
             - 8888:8888
         volumes: 
-            - cluster-C-volume:/var/lib/jupyter
+            -  shared-workspace:/opt/workspace
 
             
     spark-master:
@@ -63,7 +64,7 @@ services:
         environment:
             - INIT_DAEMON_STEP=setup_spark
         volumes:
-            - cluster-C-volume:/var/lib/jupyter  
+            -  shared-workspace:/opt/workspace  
 
     spark-worker-1:
         image: bde2020/spark-worker:3.1.1-hadoop3.2
@@ -75,10 +76,13 @@ services:
         environment:
             - "SPARK_MASTER=spark://spark-master:7077"
         volumes:
-            - cluster-C-volume:/var/lib/jupyter
-            
+            -  shared-workspace:/opt/workspace
+
 volumes:    
     cluster-A-volume:
     cluster-B-volume:
     cluster-C-volume:
+    shared-workspace:
+        name: "hadoop-distributed-file-system"
+        driver: local
 
