@@ -47,8 +47,8 @@ services:
         container_name: jupyterlab
         #image: jupyterlab
         build: 
-            # context: ./services/jupyter
-            # dockerfile: Dockerfile
+            context: ./services/jupyter
+            dockerfile: Dockerfile
         ports:
             - 8888:8888
         volumes: 
