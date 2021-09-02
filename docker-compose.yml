@@ -80,8 +80,12 @@ services:
 
 volumes:    
     cluster-A-volume:
+        external: true
     cluster-B-volume:
+        external: true
     cluster-C-volume:
+        external: true
     shared-workspace:
         driver: local
+        external: true
 
