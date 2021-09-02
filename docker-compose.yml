@@ -50,7 +50,7 @@ services:
             context: ./services/jupyter
             dockerfile: Dockerfile
         environment: 
-            - GRAND_SUDO=yes
+            - GRANT_SUDO=yes
         ports:
             - 8888:8888
         volumes: 
