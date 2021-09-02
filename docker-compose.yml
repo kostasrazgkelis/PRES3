@@ -50,6 +50,9 @@ services:
             context: ./services/jupyter
             dockerfile: Dockerfile
         environment: 
+            - DB_HOST=kostas
+            - DB_USER=kostas
+            - DB_PASSWORD=admin1234
             - GRANT_SUDO=yes
         ports:
             - 8888:8888
