@@ -49,6 +49,8 @@ services:
         build: 
             context: ./services/jupyter
             dockerfile: Dockerfile
+        environment: 
+            - GRAND_SUDO=yes
         ports:
             - 8888:8888
         volumes: 
