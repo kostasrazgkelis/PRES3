@@ -10,7 +10,6 @@ RUN pip3 install --no-cache-dir -r requirements.txt
 RUN pip3 install wget 
 RUN pip3 install pyspark
 RUN pip3 install jupyter
-RUN curl -L https://github.com/SpencerPark/IJava/releases/download/v1.3.0/ijava-1.3.0.zip > ijava-kernel.zip
 RUN apt-get install openjdk-7-jdk
 
 USER $NB_UID
