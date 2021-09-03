@@ -26,22 +26,22 @@ services:
         volumes: 
             - cluster-B-volume:/var/lib/data
 
-    cluster-c:
-        container_name: cluster-c
-        build: 
-            context: ./services/compiler-service
-            dockerfile: Dockerfile
-        ports: 
-            - "9400:9400"
-        environment: 
-            - PORT=9400
-        depends_on: 
-            - cluster-a
-            - cluster-b
-        environment: 
-            - PORT=9300
-        volumes: 
-            - cluster-C-volume:/var/lib/data 
+    # cluster-c:
+    #     container_name: cluster-c
+    #     build: 
+    #         context: ./services/compiler-service
+    #         dockerfile: Dockerfile
+    #     ports: 
+    #         - "9400:9400"
+    #     environment: 
+    #         - PORT=9400
+    #     depends_on: 
+    #         - cluster-a
+    #         - cluster-b
+    #     environment: 
+    #         - PORT=9400
+    #     volumes: 
+    #         - cluster-C-volume:/var/lib/data 
 
     jupyterlab:
         container_name: jupyterlab
