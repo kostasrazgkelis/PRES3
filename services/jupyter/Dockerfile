@@ -13,4 +13,4 @@ RUN pip3 install jupyter
 
 USER $NB_UID
 
-CMD ["jupyter", "notebook", "--port=8888" ,"--no-browser", "--ip=0.0.0.0", "--allow-root",  "-e GRANT_SUDO=yes"]
+CMD ["jupyter", "notebook", "--port=8888" ,"--no-browser", "--ip=0.0.0.0", "--allow-root",  "$PWD:/home/jovyan/work -e GRANT_SUDO=yes"]
