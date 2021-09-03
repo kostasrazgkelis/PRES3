@@ -11,10 +11,8 @@ RUN pip3 install wget
 RUN pip3 install pyspark
 RUN pip3 install jupyter
 RUN curl -L https://github.com/SpencerPark/IJava/releases/download/v1.3.0/ijava-1.3.0.zip > ijava-kernel.zip
-RUN unzip ijava-kernel.zip -d ijava-kernel \
-  && cd ijava-kernel \
-  && python3 install.py --sys-prefix
-  
+RUN apt-get install openjdk-7-jdk
+
 USER $NB_UID
 
 CMD ["jupyter", "notebook", "--port=8888" ,"--no-browser", "--ip=0.0.0.0", "--allow-root"]
