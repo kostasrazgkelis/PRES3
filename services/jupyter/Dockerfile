@@ -4,7 +4,7 @@ USER root
 COPY requirements.txt ./
 
 RUN apt-get update && apt-get -y update
-RUN apt-get install openjdk-16-jdk
+RUN apt-get install openjdk-16-jdk && apt-get -y update
 RUN apt-get install -y build-essential python3.6 python3-pip python3-dev
 RUN pip3 -q install pip --upgrade
 RUN pip3 install --no-cache-dir -r requirements.txt
