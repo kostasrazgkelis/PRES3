@@ -44,11 +44,11 @@ services:
     #         - cluster-C-volume:/var/lib/data 
 
     jupyterlab:
-        #container_name: jupyterlab
+        container_name: jupyterlab
         image: jupyter/pyspark-notebook
-        build: 
-            context: ./services/jupyter
-            dockerfile: Dockerfile
+        # build: 
+        #     context: ./services/jupyter
+        #     dockerfile: Dockerfile
         ports:
             - 8888:8888
             - "4040-4080:4040-4080"
