@@ -44,8 +44,8 @@ services:
     #         - cluster-C-volume:/var/lib/data 
 
     jupyterlab:
-        container_name: jupyterlab
-        #image: jupyter/pyspark-notebook
+        #container_name: jupyterlab
+        image: jupyter/pyspark-notebook
         build: 
             context: ./services/jupyter
             dockerfile: Dockerfile
