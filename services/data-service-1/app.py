@@ -1,54 +1,78 @@
-from flask import Flask, json, jsonify, request, render_template, make_response , send_file
+from flask import Flask, send_file
 import os
 from flask.wrappers import Response
 import jellyfish
 import pandas as pd
-from pandas.core.frame import DataFrame
-
+import random
 
 HOST = '0.0.0.0'
 PORT = '9200'
 NAME_OF_CLUSTER = "Cluster_A"
+path = f"C:/Users/Kostas Razg/Desktop/Πτυχιακή/MyThesis/myThesis/"
 
 app = Flask(__name__)
 
 
-def encode_with_soundex(file):
-    df1 = pd.read_csv(file)
-    df1['soundex'] = df1['data1'].apply(lambda x: jellyfish.soundex(x))
- 
+
+def create_alp():  
+    return str(chr(random.randrange(65,90))) + str(chr(random.randrange(65,90))) + str(chr(random.randrange(65,90))) + str(chr(random.randrange(65,90)))
+
 @app.route('/')
 def get():
     return f'{NAME_OF_CLUSTER}', 200
 
 
-@app.route("/take_data/", methods=["GET"])
-def post():
-    print(f"{NAME_OF_CLUSTER}- Data is being send")
+@app.route("/take_data/<noise>", methods=["GET"])
+def post(noise):
 
     try:
-        df1 = pd.read_csv("/var/lib/data/A_1k_names_separated.csv", header=0, names=[0,1,2])
+        noise = int(noise)
 
-        column_1 = df1[0].apply(lambda x: jellyfish.soundex(x))
-        column_2 = df1[1].apply(lambda x: jellyfish.soundex(x))
-        column_3 = df1[2].apply(lambda x: jellyfish.soundex(x))
-
-    except Exception as e:
-        print(f"{NAME_OF_CLUSTER} - There was an error!")
+    except ValueError:
+            return Response('<html><head><h1 style="background-color:powderblue;">There was an error!</h1></head></html>', 400)
     else:
-        # Merge both datasets
-        result = pd.concat([column_1, column_2, column_3], axis=1)
+        print(f"{noise}")
+        if 0 <= noise <= 100:
+            
+            print(f"{NAME_OF_CLUSTER}- Data is being send")
 
-        result.to_csv('/var/lib/data/joined_data.csv', encoding='utf-8', index=False)
+            try:
+                df1 = pd.read_csv("/var/lib/data/A_1k_names_separated.csv", header=0, names=[0,1,2])
+
+                column_1 = df1[0].apply(lambda x: jellyfish.soundex(x))
+                column_2 = df1[1].apply(lambda x: jellyfish.soundex(x))
+                column_3 = df1[2].apply(lambda x: jellyfish.soundex(x))
+                
+
+            except Exception as e:
+                return Response('<html><head><h1 style="background-color:powderblue;">There was an error!</h1></head></html>', 400)
+            else:
+
+                data_list = list()
+                for _ in range(int(noise * df1.shape[0] / 100)):
+                    data_list.append( [jellyfish.soundex( create_alp()) for _ in range(df1.shape[1]) ] )
+
+                df2 = pd.DataFrame(data_list, columns=[0,1,2])
+                df2.to_csv("/var/lib/data/noise.csv", encoding='utf-8', index=False)
+
+
+                # Merge both datasets
+                result = pd.concat([column_1, column_2, column_3], axis=1)
+
+                result = pd.concat([result,df2], ignore_index=True, axis=0).sort_values(by=2)
+
+                result.to_csv('/var/lib/data/joined_data.csv', encoding='utf-8', index=False)
+                
+                print(f"{NAME_OF_CLUSTER}- the download has finished")
+
+                return send_file('/var/lib/data/joined_data.csv',
+                            mimetype='text/csv',
+                            attachment_filename='a_cluster_data.csv',
+                            as_attachment=True)
+
+        else:
+            return Response('<html><head><h1 style="background-color:red;">Error: You need an intenger 0-100. </h1></head></html>', 200)
         
-        print(f"{NAME_OF_CLUSTER}- the download has finished")
-
-        return send_file('/var/lib/data/joined_data.csv',
-                    mimetype='text/csv',
-                    attachment_filename='a_cluster_data.csv',
-                    as_attachment=True)
-
-    
 
 if __name__ == '__main__':
     ENVIRONMENT_DEBUG = os.environ.get("DEBUG", True)
