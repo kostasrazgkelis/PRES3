@@ -4,7 +4,7 @@ USER root
 COPY requirements.txt ./
 
 RUN apt-get update && apt-get -y update
-RUN apt-get install -y openjdk-8-jdk && \
+RUN apt-get install -y openjdk-16-jdk && \
     apt-get install -y ant && \
     apt-get clean;
 RUN apt-get install -y build-essential python3.6 python3-pip python3-dev
