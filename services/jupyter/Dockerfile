@@ -7,6 +7,12 @@ RUN apt-get update && apt-get -y update
 RUN apt-get install -y openjdk-16-jdk && \
     apt-get install -y ant && \
     apt-get clean;
+
+ RUN apt-get update && \
+    apt-get install ca-certificates-java && \
+    apt-get clean && \
+    update-ca-certificates -f;
+
 RUN apt-get install -y build-essential python3.6 python3-pip python3-dev
 RUN pip3 -q install pip --upgrade
 RUN pip3 install --no-cache-dir -r requirements.txt
@@ -14,6 +20,8 @@ RUN pip3 install wget
 RUN pip3 install pyspark
 RUN pip3 install jupyter
 
+ENV JAVA_HOME /usr/lib/jvm/java-16-openjdk-amd64/
+RUN export JAVA_HOME
 
 USER $NB_UID
 
