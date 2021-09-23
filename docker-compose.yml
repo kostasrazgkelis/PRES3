@@ -33,7 +33,7 @@ services:
             context: ./services/jupyter
             dockerfile: Dockerfile
         ports:
-            - "7077:7077"
+            - "8888:8888"
         volumes:
             -  shared-workspace:/opt/workspace 
 
