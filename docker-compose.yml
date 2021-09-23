@@ -49,7 +49,6 @@ services:
         ports:
             – "8888:8888/tcp"
             – "4040:4040/tcp"
-        user: root
         volumes: 
             -  shared-workspace:/opt/workspace
 
