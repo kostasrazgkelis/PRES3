@@ -20,7 +20,9 @@ ENV JAVA_HOME=/usr/lib/jvm/java-8-openjdk-amd64/jre/bin/java
 
 RUN apt-get update && apt-get install -y \
     python3-pip
-
+    
+RUN python -m venv venv
+RUN venv/bin/pip install --upgrade pip
 
 RUN mkdir src
 WORKDIR /src
