@@ -45,10 +45,10 @@ services:
 
     jupyterlab:
         container_name: jupyterlab
-        image: jupyter/pyspark-notebook
-        # build: 
-        #     context: ./services/jupyter
-        #     dockerfile: Dockerfile
+        #image: jupyter/pyspark-notebook
+        build: 
+            context: ./services/jupyter
+            dockerfile: Dockerfile
         ports:
             - 8888:8888
         volumes: 
