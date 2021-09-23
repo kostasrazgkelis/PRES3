@@ -1,4 +1,4 @@
-FROM ubuntu:latest
+FROM jupyter/pyspark-notebook:latest
 
 USER root
 
@@ -8,11 +8,6 @@ COPY requirements.txt ./
 
 RUN apt-get update && apt-get install -y \
     python3-pip
-
-
-RUN pip3 install wget 
-RUN pip3 install pyspark
-RUN pip3 install jupyter
 
 
 RUN pip3 install --no-cache-dir -r requirements.txt
