@@ -28,14 +28,14 @@ services:
     
 
     jupyter:
-        container_nam: jupyer
+        container_name: jupyer
         image: jupyter/all-spark-notebook
         ports:
             - "7077:7077"
         volumes:
             -  shared-workspace:/opt/workspace 
 
-            
+
     # cluster-c:
     #     container_name: cluster-c
     #     build: 
