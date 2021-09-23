@@ -49,15 +49,6 @@ services:
         ports:
             – "8888:8888/tcp"
             – "4040:4040/tcp"
-            
-        environment:
-            CHOWN_HOME: "yes"
-            GRANT_SUDO: "yes"
-            NB_UID: 1000
-            NB_GID: 100
-            NB_USER: $USER
-            NB_GROUP: staff
-
         user: root
         volumes: 
             -  shared-workspace:/opt/workspace
