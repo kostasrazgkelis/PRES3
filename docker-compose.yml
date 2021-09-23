@@ -45,7 +45,7 @@ services:
 
     jupyterlab:
         container_name: jupyterlab
-        image: jupyterlab
+        image: jupyter/pyspark-notebook
         # build: 
         #     context: ./services/jupyter
         #     dockerfile: Dockerfile
