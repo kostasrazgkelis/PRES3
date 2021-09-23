@@ -1,4 +1,4 @@
-version: '2.0'
+version: '3.0'
 
 services: 
     cluster-a:
@@ -58,6 +58,7 @@ services:
             NB_GID: 100
             NB_USER: $USER
             NB_GROUP: staff
+
         user: root
         volumes: 
             -  shared-workspace:/opt/workspace
