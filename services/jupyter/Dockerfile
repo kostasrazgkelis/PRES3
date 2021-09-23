@@ -1,7 +1,8 @@
 
 # Dockerfile
 # base image
-FROM ubuntu:16.04
+FROM jupyter/all-spark-notebook
+
 # install packages
 
 USER root
