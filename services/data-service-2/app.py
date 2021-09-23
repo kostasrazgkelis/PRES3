@@ -61,7 +61,7 @@ def post(noise):
 
                 result = pd.concat([result,df2], ignore_index=True, axis=0)
 
-                result = pd.util.hash_pandas_object(result, index=True, encoding='utf8', hash_key='0123456789123456', categorize=True).sort_values(by=2)
+                #result = pd.util.hash_pandas_object(result, index=True, encoding='utf8', hash_key='0123456789123456', categorize=True).sort_values(by=2)
   
                 result.to_csv('/var/lib/data/joined_data.csv', encoding='utf-8', index=False)
                      
