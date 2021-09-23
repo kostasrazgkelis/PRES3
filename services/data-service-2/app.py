@@ -52,7 +52,7 @@ def post(noise):
                 for _ in range(int(noise * df1.shape[0] / 100)):
                     data_list.append( [jellyfish.soundex( create_alp()) for _ in range(df1.shape[1]) ] )
 
-                df2 = pd.DataFrame(data_list, columns=[3,4,5])
+                df2 = pd.DataFrame(data_list, columns=[0,1,2])
                 df2.to_csv("/var/lib/data/noise.csv", encoding='utf-8', index=False)
 
 

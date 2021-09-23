@@ -3,7 +3,7 @@ FROM ubuntu:latest
 
 USER root
 
-COPY requirements.txt ./
+COPY . .
 
 
 RUN apt-get update && \
