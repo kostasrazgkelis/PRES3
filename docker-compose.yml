@@ -34,7 +34,14 @@ services:
             - "7077:7077"
         volumes:
             -  shared-workspace:/opt/workspace 
-
+        environment:
+            CHOWN_HOME: "yes"
+            GRANT_SUDO: "yes"
+            NB_UID: 1000
+            NB_GID: 100
+            NB_USER: $USER
+            NB_GROUP: staff
+        user: root
 
     # cluster-c:
     #     container_name: cluster-c
