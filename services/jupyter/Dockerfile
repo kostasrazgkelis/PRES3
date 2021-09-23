@@ -18,7 +18,10 @@ RUN apt-get update && \
 
 ENV JAVA_HOME=/usr/lib/jvm/java-8-openjdk-amd64/jre/bin/java
 
-RUN apt-get update && apt-get -y update
+RUN apt-get update && apt-get install -y \
+    python3-pip
+    
+RUN apt-get install -y build-essential python3.6 python3-pip python3-dev
 RUN pip3 -q install pip --upgrade
 
 RUN mkdir src
