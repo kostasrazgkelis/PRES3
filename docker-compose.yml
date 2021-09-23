@@ -49,8 +49,7 @@ services:
         ports:
             – "8888:8888/tcp"
             – "4040:4040/tcp"
-
-        working_dir: /home/$USER/work
+            
         environment:
             CHOWN_HOME: "yes"
             GRANT_SUDO: "yes"
