@@ -47,7 +47,7 @@ services:
         image: jupyter/all-spark-notebook:latest
         container_name: jupyterspark
         ports:
-            – "8888:8888/tcp"
+            – "8888:8888"
         volumes: 
             -  shared-workspace:/opt/workspace
 
