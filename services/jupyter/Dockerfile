@@ -13,7 +13,7 @@ RUN apt-get update && apt-get install -y \
 RUN pip3 install wget 
 RUN pip3 install pyspark
 RUN pip3 install jupyter
-RUN apt-get install openjdk-7-jdk
+RUN apt-get install openjdk-16-jdk
 
 RUN pip3 install --no-cache-dir -r requirements.txt
 
