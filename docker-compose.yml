@@ -43,17 +43,28 @@ services:
     #     volumes: 
     #         - cluster-C-volume:/var/lib/data 
 
-    jupyterlab:
-        container_name: jupyterlab
-        image: jupyter/pyspark-notebook
-        # build: 
-        #     context: ./services/jupyter
-        #     dockerfile: Dockerfile
+    jupyterspark:
+        container_name: jupyterspark
+        image: jupyter/all-spark-notebook:latest
         ports:
-            - 8888:8888
+            – "8888:8888/tcp"
+            – "4040:4040/tcp"
+
+        working_dir: /home/$USER/work
+        environment:
+            CHOWN_HOME: "yes"
+            GRANT_SUDO: "yes"
+            NB_UID: 1000
+            NB_GID: 100
+            NB_USER: $USER
+            NB_GROUP: staff
+        user: root
         volumes: 
             -  shared-workspace:/opt/workspace
-
+        deploy:
+            replicas: 1
+            restart_policy:
+            condition: on-failure
             
     spark-master:
         image: bde2020/spark-master:3.1.1-hadoop3.2
