@@ -43,12 +43,11 @@ services:
     #     volumes: 
     #         - cluster-C-volume:/var/lib/data 
 
-    jupyterspark:
-        container_name: jupyterspark
+    jupyterspark:   
         image: jupyter/all-spark-notebook:latest
+        container_name: jupyterspark
         ports:
             – "8888:8888/tcp"
-            – "4040:4040/tcp"
         volumes: 
             -  shared-workspace:/opt/workspace
 
