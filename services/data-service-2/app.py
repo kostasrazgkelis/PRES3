@@ -37,7 +37,7 @@ def post(noise):
             print(f"{NAME_OF_CLUSTER}- Data is being send")
 
             try:
-                df1 = pd.read_csv("/var/lib/data/B_1k_names_separated.csv", header=0, names=[0,1,2])
+                df1 = pd.read_csv("/var/lib/data/B_1k_names_separated.csv", header=0, names=[3,4,5])
 
                 column_1 = df1[0].apply(lambda x: jellyfish.soundex(x))
                 column_2 = df1[1].apply(lambda x: jellyfish.soundex(x))
