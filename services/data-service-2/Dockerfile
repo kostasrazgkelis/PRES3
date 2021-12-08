@@ -1,12 +1,12 @@
 FROM python:3
 
-WORKDIR /usr/src/app-2
+WORKDIR /var/lib
 
 COPY requirements.txt ./
-RUN pip install  -r requirements.txt
 
+RUN pip install -r requirements.txt
 
-COPY . .
+COPY . /var/lib/
 
 # define the port number the container should expose
 EXPOSE 9300
