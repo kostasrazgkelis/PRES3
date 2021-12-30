@@ -115,7 +115,11 @@ def post(matching_field=None, noise=None):
                 try: 
                     for column in data_frame:
                         if column != 'id':
+
+                            #Applies to the data the jellyfish-soundex function and also encodes them with the SHA256 encryption
                             data_frame[column] = data_frame[column].apply(lambda x: jellyfish.soundex(x)).apply(lambda x: hashlib.sha256( x.encode()).hexdigest() )
+
+                            #Creates fake soundex values
                             fake_soundex_values[column] = fake_soundex_values[column].apply(lambda x: hashlib.sha256( x.encode()).hexdigest() )
 
 
@@ -124,9 +128,11 @@ def post(matching_field=None, noise=None):
 
                 else:
                     
+                    #We merge all the fake soundex data with the correct 
                     merged_data = pd.concat([data_frame, fake_soundex_values], axis=0).sort_values(by=column)
                     merged_data.to_csv('/var/lib/data/complete_data.csv', encoding='utf-8', header=True, index=False)
 
+                    #We send back the final merged file
                     return send_file(f'/var/lib/data/complete_data.csv',
                                 mimetype='text/csv',
                                 attachment_filename='a_cluster_data.csv',
@@ -196,6 +202,24 @@ def get_data_from_alice():
         accepted_data_from_alice = pd.read_csv(request.files['file'])
         accepted_data_from_alice.to_csv('/var/lib/data/data_send_from_bob.csv', encoding='utf-8', index=False)
         return Response('The data has been downloaded succesfully')
+
+
+@app.route('/send_initial_data/', methods=['GET'])
+def send_initial_data():
+    return send_file(f'/var/lib/data/A_1k_names_separated.csv',
+                mimetype='text/csv',
+                attachment_filename='A_1k_names_separated.csv',
+                as_attachment=True)
+
+@app.route('/get_initial_data/', methods=['GET'])
+def get_initial_data():
+    request = requests.get(f"http://cluster-b:9300//send_initial_data")
+    url_content = request.content
+    with open("/var/lib/data/B_1k_names_separated.csv", 'wb') as file:
+        file.write(url_content)
+
+    return Response('We got the data from the Bob')
+    
 
 if __name__ == '__main__':
     ENVIRONMENT_DEBUG = os.environ.get("DEBUG", True)

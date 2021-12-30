@@ -183,13 +183,30 @@ def send_indexed_data():
 
         return Response('Everything was completed succesfully', 200)
 
-@app.route('/return_efficient')
 @app.route('/accept_data_from_alice/', methods=['POST'])
 def get_data_from_alice():
         #accept the final data from alice
         accepted_data_from_alice = pd.read_csv(request.files['file'])
         accepted_data_from_alice.to_csv('/var/lib/data/data_send_from_alice.csv', encoding='utf-8', index=False)
         return Response('The data has been downloaded succesfully')
+
+
+@app.route('/send_initial_data/', methods=['GET'])
+def send_initial_data():
+    return send_file(f'/var/lib/data/B_1k_names_separated.csv',
+                mimetype='text/csv',
+                attachment_filename='B_1k_names_separated.csv',
+                as_attachment=True)
+
+@app.route('/get_initial_data/', methods=['GET'])
+def get_initial_data():
+    request = requests.get(f"http://cluster-a:9200//send_initial_data")
+    url_content = request.content
+
+    with open("/var/lib/data/A_1k_names_separated.csv", 'wb') as file:
+        file.write(url_content)
+
+    return Response('We got the data from the Alice')
 
 if __name__ == '__main__':
     ENVIRONMENT_DEBUG = os.environ.get("DEBUG", True)
