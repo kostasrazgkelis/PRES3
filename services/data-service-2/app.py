@@ -23,10 +23,10 @@ def create_alp():
     return str(chr(random.randrange(65,90))) + str(chr(random.randrange(48,54))) + str(chr(random.randrange(48,54))) + str(chr(random.randrange(48,54)))
 
 def create_noise(noise, size, name):
-    return pd.Series([create_alp() for _ in range(int(noise * size / 100))], name=name)
+    return pd.Series([create_alp() for _ in range(int(noise * size / 100))], dtype = 'object', name=name)
 
-def create_fake_index(noise,size, name):
-    return pd.Series(['Fake Index' for _ in range(int(noise * size / 100))], name=name)
+def create_fake_index(noise, size, name):
+    return pd.Series(['Fake Index' for _ in range(int(noise * size / 100))], dtype = 'object', name=name)
 
 def create_fake_soundex_values(noise, size, columns):
     a = create_noise(noise, size, columns[1])
@@ -38,40 +38,37 @@ def create_fake_soundex_values(noise, size, columns):
 def precision():
 
     try:
-        joined_data    = pd.read_csv('/var/lib/data/joined_data.csv', header=0).astype(str)
-        complete_data  = pd.read_csv('/var/lib/data/complete_data.csv', header=0).astype(str)
+        b_joined_data    = pd.read_csv('/var/lib/data/final_data.csv')
+        a_joined_data    = pd.read_csv('/var/lib/data/data_send_from_alice.csv')
+
     except Exception as e:
         return f"There was an error opening the files! reason: {e}" 
     else:
         conn = connect(':memory:')
 
-        joined_data.to_sql('joined_data', conn)
-        complete_data.to_sql('complete_data', conn)
+        a_joined_data.to_sql('a_joined_data', conn)
+        b_joined_data.to_sql('b_joined_data', conn)
 
 
         results = pd.read_sql(' SELECT count(*) as false_positive\
-                                FROM complete_data, joined_data\
-                                WHERE joined_data.[surname] == complete_data.[surname] and joined_data.[name] == complete_data.[name] and complete_data.[id] == "Fake Index" ', conn)
+                                FROM a_joined_data, b_joined_data\
+                                WHERE a_joined_data.[id] == b_joined_data.[id] and ( a_joined_data.[surname] != b_joined_data.[surname] or a_joined_data.[name] != b_joined_data.[name] ) ', conn)
 
         FP = results['false_positive'][0]
 
         results = pd.read_sql(' SELECT count(*) as true_positive\
-                                FROM complete_data , joined_data \
-                                WHERE joined_data.[surname] == complete_data.[surname] and joined_data.[name] == complete_data.[name] and complete_data.[id] != "Fake Index" ', conn)
+                                FROM a_joined_data , b_joined_data \
+                                WHERE a_joined_data.[id] == b_joined_data.[id] and ( a_joined_data.[surname] == b_joined_data.[surname] and a_joined_data.[name] == b_joined_data.[name] ) ', conn)
 
         TP = results['true_positive'][0]
 
         results = pd.read_sql(' SELECT count(*) as false_negative\
-                                FROM complete_data , joined_data \
-                                WHERE joined_data.[surname] != complete_data.[surname] and joined_data.[name] != complete_data.[name] and complete_data.[id] == "Fake Index" ', conn)
+                                FROM a_joined_data , b_joined_data \
+                                WHERE a_joined_data.[id] != b_joined_data.[id] and ( a_joined_data.[surname] == b_joined_data.[surname] and a_joined_data.[name] == b_joined_data.[name] ) ', conn)
 
         FN = results['false_negative'][0]
 
-        # results = pd.read_sql(' SELECT count(*) as true_negative\
-        #                         FROM complete_data , joined_data \
-        #                         WHERE joined_data.[surname] != complete_data.[surname] and joined_data.[name] != complete_data.[name] and complete_data.[id] == "Fake Index" ', conn)
-            
-        # TN = results['true_negative'][0]
+
         Dictionary ={   'TP': str(TP), 
                         'FP': str(FP),
                         'FN': str(FN)}
@@ -99,13 +96,13 @@ def post(matching_field=None, noise=None):
 
         try:
                 data_frame = pd.read_csv(correct_path, header=0, names=['id','surname','name'])
-
+                
         except Exception as e:
                 return Response('<html><head><h1 style="background-color:powderblue;">There is not such file</h1></head></html>', 400)
 
         else:        
 
-            if 0 <= noise <=300 and matching_field in data_frame.columns:
+            if 0 <= noise <=1000 and matching_field in data_frame.columns:
                 
                 fake_soundex_values = create_fake_soundex_values(noise, data_frame.shape[0], data_frame.columns)
                 try: 
@@ -121,7 +118,7 @@ def post(matching_field=None, noise=None):
                 else:
                     
                     merged_data = pd.concat([data_frame, fake_soundex_values], axis=0).sort_values(by=column)
-                    merged_data.to_csv('/var/lib/data/complete_data.csv', encoding='utf-8', header=True, index=False)
+                    merged_data.to_csv('/var/lib/data/B_complete_data.csv', encoding='utf-8', header=True, index=False)
 
                     merged_data.drop('id', axis=1)
                     merged_data.to_csv('/var/lib/data/hidden_information.csv', encoding='utf-8', header=True, index=False)
@@ -137,10 +134,17 @@ def post(matching_field=None, noise=None):
     elif request.method == 'POST':
 
         #save the data new joinned file from carol 
-        downloaded_data = pd.read_csv(request.files['file'])
-        downloaded_data.to_csv('/var/lib/data/joined_data.csv', encoding='utf-8', index=False)
 
-        return "done"
+        try:
+            downloaded_data = pd.read_csv(request.files['file'])
+        except FileExistsError as e:
+            return Response(f"We could not find the file!")
+        else:
+            downloaded_data.to_csv('/var/lib/data/joined_data.csv', encoding='utf-8', index=False, columns=['id','name','surname'])  
+            return Response(requests.get(f'http://cluster-a:9200//get_initial_data/'))
+
+            
+
 
 
 @app.route("/send_data_to_alice/", methods=['GET'])
@@ -151,6 +155,7 @@ def send_indexed_data():
         initial_data   = pd.read_csv('/var/lib/data/B_1k_names_separated.csv', header=0 ,names=['id','surname','name']).astype(str)
         complete_data  = pd.read_csv('/var/lib/data/complete_data.csv', header=0).astype(str)
         joined_data    = pd.read_csv('/var/lib/data/joined_data.csv', header=0).astype(str)
+
 
     except Exception as e:
         return f"There was an error opening any of the files. {e} "
@@ -163,7 +168,8 @@ def send_indexed_data():
         complete_data.to_sql('complete_data', conn)
         initial_data.to_sql('initial_data', conn)
         joined_data.to_sql('joined_data', conn)
-        
+    
+
         #we get the hash values from the 
         results = pd.read_sql(' SELECT complete_data.[id] \
                                 FROM complete_data , joined_data \
@@ -172,16 +178,19 @@ def send_indexed_data():
         results.to_sql('matched_entities', conn)
         
         #we finally get the rest of the matched data and we prepare to send these information to Alice
-        results = pd.read_sql(' SELECT initial_data.[id], initial_data.[name], initial_data.[surname]\
+        results = pd.read_sql(' SELECT initial_data.[id], initial_data.[name], initial_data.[surname] \
                                 FROM initial_data, matched_entities \
                                 WHERE initial_data.[id] == matched_entities.[id] ', conn)
         
-        results.to_csv('/var/lib/data/final_data.csv', encoding="utf-8")
+        results.reset_index(drop=True, inplace=True)
+        results.to_csv('/var/lib/data/final_data.csv', encoding="utf-8", header=0)
+        
 
         myfiles = {'file': open('/var/lib/data/final_data.csv' ,'rb')}
         requests.post(f'http://cluster-a:9200//accept_data_from_bob/', files = myfiles)
 
         return Response('Everything was completed succesfully', 200)
+
 
 @app.route('/accept_data_from_alice/', methods=['POST'])
 def get_data_from_alice():
@@ -190,23 +199,37 @@ def get_data_from_alice():
         accepted_data_from_alice.to_csv('/var/lib/data/data_send_from_alice.csv', encoding='utf-8', index=False)
         return Response('The data has been downloaded succesfully')
 
-
+"""
+This is an API call to send the joined data from cluster b to cluster a. 
+"""
 @app.route('/send_initial_data/', methods=['GET'])
 def send_initial_data():
-    return send_file(f'/var/lib/data/B_1k_names_separated.csv',
-                mimetype='text/csv',
-                attachment_filename='B_1k_names_separated.csv',
-                as_attachment=True)
+    try:
+        with open('/var/lib/data/joined_data.csv', 'r'):
+            pass
+    except FileNotFoundError:
+        return Response("File does not exists")
+    else:
+        return send_file(f'/var/lib/data/B_complete_data.csv',
+                    mimetype='text/csv',
+                    attachment_filename='B_complete_data.csv',
+                    as_attachment=True)
+ 
 
+"""
+This is an API call that get the requested data and saves them inside the container
+"""
 @app.route('/get_initial_data/', methods=['GET'])
 def get_initial_data():
     request = requests.get(f"http://cluster-a:9200//send_initial_data")
     url_content = request.content
 
-    with open("/var/lib/data/A_1k_names_separated.csv", 'wb') as file:
+    with open("/var/lib/data/A_joined.csv", 'wb') as file:
         file.write(url_content)
 
     return Response('We got the data from the Alice')
+
+
 
 if __name__ == '__main__':
     ENVIRONMENT_DEBUG = os.environ.get("DEBUG", True)
