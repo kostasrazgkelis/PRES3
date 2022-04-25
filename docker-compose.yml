@@ -13,7 +13,6 @@ services:
         volumes: 
             - cluster-A-volume:/var/lib/data
 
-
     cluster-b:
         container_name: cluster-b
         build: 
@@ -26,7 +25,6 @@ services:
         volumes: 
             - cluster-B-volume:/var/lib/data
     
-
     jupyter:
         container_name: jupyter
         build: 
@@ -36,30 +34,35 @@ services:
             - "8888:8888"
         volumes:
             -  shared-workspace:/opt/workspace 
-
+        networks:
+            - spark-net
             
-    spark-master:
-        image: bde2020/spark-master:3.1.1-hadoop3.2
-        container_name: spark-master-thesis
+    master:
+        build:
+            context: .
+            dockerfile: services/spark/Dockerfile
+        container_name: spark-master
+        command: bash -c "start-master.sh && tail -F /dev/null"
         ports:
-            - "8080:8080"
             - "7077:7077"
-        environment:
-            - INIT_DAEMON_STEP=setup_spark
+            - "8080:8080"
         volumes:
-            -  shared-workspace:/opt/workspace  
+            -  shared-workspace:/opt/workspace 
+        networks:
+            - spark-net
 
-    spark-worker-1:
-        image: bde2020/spark-worker:3.1.1-hadoop3.2
-        container_name: spark-worker-thesis-1
-        depends_on:
-            - spark-master
-        ports:
-            - "8081:8081"
+    worker:
+        build:
+            context: .
+            dockerfile: services/spark/Dockerfile
         environment:
-            - "SPARK_MASTER=spark://spark-master:7077"
+            - SPARK_WORKER_CORES=2
+            - SPARK_WORKER_MEMORY=1g
+        command: bash -c "start-worker.sh spark://spark-master:7077 && tail -F /dev/null"
         volumes:
-            -  shared-workspace:/opt/workspace
+            -  shared-workspace:/opt/workspace 
+        networks:
+            - spark-net
 
 volumes:    
     cluster-A-volume:
@@ -67,5 +70,9 @@ volumes:
     shared-workspace:
         name: "hadoop-distributed-file-system"
         driver: local
+
+networks:
+    spark-net:
+
 
 
