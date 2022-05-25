@@ -1,68 +1,101 @@
 version: '3.0'
 
-services: 
+services:
+    front:
+        container_name: front-end
+        build:
+            context: .
+            dockerfile: infrastructures/front/Dockerfile
+        ports:
+            - "9000:9000"
+        environment:
+            - PORT=9000
+            - DEBUG=1
+            - NAME=front
+        restart: always
+        volumes:
+            - ./src/services/front/:/src/app
+        networks:
+            - front-back-net
+
     cluster-a:
         container_name: cluster-a
-        build: 
-            context: ./services/data-service-1
-            dockerfile: Dockerfile
-        ports: 
+        build:
+            context: .
+            args:
+                NAME: cluster_a
+            dockerfile: infrastructures/app/Dockerfile
+        ports:
             - "9200:9200"
-        environment: 
+        environment:
             - PORT=9200
-        volumes: 
-            - cluster-A-volume:/var/lib/data
+            - DEBUG=1
+            - NAME=cluster_a
+        restart: always
+        volumes:
+            - ./src/services/app/:/src/app
+            #- cluster-A-volume:/src/app
+        networks:
+            - front-back-net
 
     cluster-b:
         container_name: cluster-b
         build: 
-            context: ./services/data-service-2
-            dockerfile: Dockerfile
-        ports: 
+            context: .
+            args:
+                NAME: cluster_b
+            dockerfile: infrastructures/app/Dockerfile
+        ports:
             - "9300:9300"
-        environment: 
-            - PORT=9300
-        volumes: 
-            - cluster-B-volume:/var/lib/data
-    
-    jupyter:
-        container_name: jupyter
-        build: 
-            context: ./services/jupyter
-            dockerfile: Dockerfile
-        ports:
-            - "8888:8888"
-        volumes:
-            -  shared-workspace:/opt/workspace 
-        networks:
-            - spark-net
-            
-    master:
-        build:
-            context: .
-            dockerfile: services/spark/Dockerfile
-        container_name: spark-master
-        command: bash -c "start-master.sh && tail -F /dev/null"
-        ports:
-            - "7077:7077"
-            - "8080:8080"
-        volumes:
-            -  shared-workspace:/opt/workspace 
-        networks:
-            - spark-net
-
-    worker:
-        build:
-            context: .
-            dockerfile: services/spark/Dockerfile
         environment:
-            - SPARK_WORKER_CORES=2
-            - SPARK_WORKER_MEMORY=1g
-        command: bash -c "start-worker.sh spark://spark-master:7077 && tail -F /dev/null"
+            - PORT=9300
+            - DEBUG=1
+            - NAME=cluster_b
+        restart: always
         volumes:
-            -  shared-workspace:/opt/workspace 
+            - ./src/services/app/:/src/app
+            #- cluster-B-volume:/src/app
         networks:
-            - spark-net
+            - front-back-net
+
+#    jupyter:
+#        container_name: jupyter
+#        build:
+#            context: ./infrastructures/jupyter
+#            dockerfile: Dockerfile
+#        ports:
+#            - "9000:8888"
+#        volumes:
+#            -  shared-workspace:/opt/workspace
+#        networks:
+#            - spark-net
+#
+#    master:
+#        build:
+#            context: infrastructures/spark
+#            dockerfile: Dockerfile
+#        container_name: master
+#        command: bash -c "start-master.sh && tail -F /dev/null"
+#        ports:
+#            - "7077:7077"
+#            - "8090:8080"
+#        volumes:
+#            -  shared-workspace:/opt/workspace
+#        networks:
+#            - spark-net
+#
+#    worker:
+#        build:
+#            context: infrastructures/spark
+#            dockerfile: Dockerfile
+#        environment:
+#            - SPARK_WORKER_CORES=3
+#            - SPARK_WORKER_MEMORY=2g
+#        command: bash -c "start-worker.sh spark://master:7077 && tail -F /dev/null"
+#        volumes:
+#            -  shared-workspace:/opt/workspace
+#        networks:
+#            - spark-net
 
 volumes:    
     cluster-A-volume:
@@ -73,6 +106,7 @@ volumes:
 
 networks:
     spark-net:
+    front-back-net:
 
 
 
