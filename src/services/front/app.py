@@ -11,7 +11,10 @@ NAME_OF_CLUSTER = os.environ.get("NAME")
 PORT = os.environ.get("PORT")
 ENVIRONMENT_DEBUG = os.environ.get("DEBUG")
 
-UPLOAD_FOLDER = f'./uploaded_files_{NAME_OF_CLUSTER}'
+UPLOAD_FOLDER = '/src/services/app/uploaded_files_a/'
+UPLOAD_FOLDER_A = '/src/services/app/uploaded_files_a/'
+UPLOAD_FOLDER_B = '/src/services/app/uploaded_files_b/'
+
 ALLOWED_EXTENSIONS = {'csv'}
 
 app = Flask(__name__)
@@ -37,24 +40,46 @@ def upload_file():
         return render_template('upload.html')
 
     if request.method == "POST":
-        if 'uploadedFile' not in request.files:
+
+        if 'uploadedFile_A' not in request.files or 'uploadedFile_B' not in request.files:
             flash('No file part')
             return redirect(request.url)
 
-        file = request.files['uploadedFile']
-        if file.filename == '':
+        file_a = request.files['uploadedFile_A']
+        file_b = request.files['uploadedFile_B']
+
+        if file_a.filename == '' or file_b.filename == '':
             flash('No selected file')
             return redirect(request.url)
 
-        if file and allowed_file(file.filename):
-            # print(file)
-            # resp = requests.post('http://cluster-a:9200/', files=file)
-            # print(resp.content)
-            return redirect(request.url)
+        if file_a and allowed_file(file_a.filename) and file_b and allowed_file(file_b.filename):
+            filename = secure_filename(file_a.filename)
+            file_a.save(os.path.join(UPLOAD_FOLDER_A, filename))
+            filename = secure_filename(file_b.filename)
+            file_b.save(os.path.join(UPLOAD_FOLDER_B, filename))
 
-            # return redirect(url_for('download_file', name=filename))
+            return render_template('upload.html')
+
 
     return render_template('upload.html')
+
+@app.route("/show_files/", methods=["GET", "POST"])
+def show_files():
+
+    # Return 404 if path doesn't exist
+    if not os.path.exists(UPLOAD_FOLDER_A) or not os.path.exists(UPLOAD_FOLDER_B):
+        return os.abort(404)
+
+    # Show directory contents
+    files_a = os.listdir(UPLOAD_FOLDER_A)
+    files_b = os.listdir(UPLOAD_FOLDER_B)
+
+    files = {
+                'files_a': files_a,
+                'files_b': files_b,
+        }
+
+    return render_template('files.html', data=files)
 
 if __name__ == '__main__':
     app.config['UPLOAD_FOLDER'] = UPLOAD_FOLDER
