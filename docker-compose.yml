@@ -14,9 +14,7 @@ services:
             - NAME=front
         restart: always
         volumes:
-            - ./src/services/front/:/src/app
-            - cluster-A-volume:/src/services/app/uploaded_files_a
-            - cluster-B-volume:/src/services/app/uploaded_files_b
+            - ./src/services/front/:/src/app/
         networks:
             - front-back-net
 
@@ -35,8 +33,7 @@ services:
             - NAME=cluster_a
         restart: always
         volumes:
-            - ./src/services/app/:/src/app
-            - cluster-A-volume:/src/services/app/uploaded_files_a
+            - ./src/services/app/:/src/app/
         networks:
             - front-back-net
 
@@ -55,8 +52,7 @@ services:
             - NAME=cluster_b
         restart: always
         volumes:
-            - ./src/services/app/:/src/app
-            - cluster-B-volume:/src/services/app/uploaded_files_b
+            - ./src/services/app/:/src/app/
         networks:
             - front-back-net
 

@@ -13,9 +13,11 @@ class ETLModel:
         the data.
     """
 
-    def __init__(self, matching_field: str, noise: int):
+    def __init__(self, path: str, columns: list, matching_field: str, noise: int):
         self.matching_field = matching_field
         self.noise = noise
+        self.path = path
+        self.columns = columns
 
     def extract_data(self) -> pd.DataFrame:
         """ This function exctracts the data from a source location. (e.g csv file)
@@ -23,7 +25,7 @@ class ETLModel:
         Returns:
             pd.DataFrame: A pandas dataframe
         """
-        self.dataframe = pd.read_csv(correct_path, header=0).astype('string')
+        self.dataframe = pd.read_csv(self.path, header=0).astype('string')
 
     def transform_data(self) -> pd.DataFrame:
         """ This function take the exctracted dataframe and starts transforming the data (cleans the data)
@@ -36,7 +38,7 @@ class ETLModel:
         Returns:
             pd.DataFrame: The transformed data
         """
-        columns_we_care = ['NCID', 'last_name', 'first_name', 'midl_name', 'street_name', 'res_city_desc', 'birth_age']
+        columns_we_care = self.columns
         columns_we_care.remove(self.matching_field)
 
         fake_soundex_values = tf.create_fake_soundex_values(self.noise, self.dataframe, self.matching_field)
