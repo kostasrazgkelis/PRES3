@@ -7,14 +7,7 @@ from flask import Flask, flash, send_file, request, redirect
 import os
 import packages.etl_pipeline as etl
 from werkzeug.utils import secure_filename
-
-HOST = '0.0.0.0'
-NAME_OF_CLUSTER = os.environ.get("NAME")
-PORT = os.environ.get("PORT")
-ENVIRONMENT_DEBUG = os.environ.get("DEBUG")
-
-UPLOAD_FOLDER = f'./uploaded_files_{NAME_OF_CLUSTER}'
-ALLOWED_EXTENSIONS = {'csv'}
+from settings import HOST, NAME_OF_CLUSTER, PORT, ENVIRONMENT_DEBUG, UPLOAD_FOLDER, ALLOWED_EXTENSIONS
 
 app = Flask(__name__)
 
@@ -63,8 +56,6 @@ def get(matching_field=None, noise=0):
     columns = request.args.getlist('columns')
     file_name = request.args.get(key='name')
 
-    file_path = UPLOAD_FOLDER + '/' + file_name
-
     if 1000 <= noise <= 0:
         response = app.response_class(
             status=400,
@@ -72,24 +63,23 @@ def get(matching_field=None, noise=0):
         )
         return response
 
-    if not os.path.exists(file_path):
+    if not os.path.exists(UPLOAD_FOLDER + '/' + file_name):
         response = app.response_class(
             status=400,
             mimetype='application/json'
         )
         return response
 
-    etl_object = etl.ETLModel(path=file_path,
+    etl_object = etl.ETLModel(file_name=file_name,
                               columns=columns,
                               matching_field=matching_field,
                               noise=noise)
     etl_object.start_etl()
 
-    return send_file(f'/uploaded/hidden_information.csv',
+    return send_file(f'{UPLOAD_FOLDER}/clean_data/transformed_data.csv',
                      mimetype='text/csv',
                      attachment_filename=f'{NAME_OF_CLUSTER}.csv',
                      as_attachment=True)
-
 
 
 if __name__ == '__main__':

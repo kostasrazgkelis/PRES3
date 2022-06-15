@@ -1,5 +1,6 @@
 import pandas as pd
 import packages.transformation_functions as tf
+from settings import UPLOAD_FOLDER
 import jellyfish
 import hashlib
 
@@ -13,11 +14,12 @@ class ETLModel:
         the data.
     """
 
-    def __init__(self, path: str, columns: list, matching_field: str, noise: int):
+    def __init__(self, file_name: str, columns: list, matching_field: str, noise: int):
         self.matching_field = matching_field
         self.noise = noise
-        self.path = path
+        self.file_name = file_name
         self.columns = columns
+        self.dataframe = None
 
     def extract_data(self) -> pd.DataFrame:
         """ This function exctracts the data from a source location. (e.g csv file)
@@ -25,7 +27,7 @@ class ETLModel:
         Returns:
             pd.DataFrame: A pandas dataframe
         """
-        self.dataframe = pd.read_csv(self.path, header=0).astype('string')
+        self.dataframe = pd.read_csv(UPLOAD_FOLDER + '/' + self.file_name, header=0).astype('string')
 
     def transform_data(self) -> pd.DataFrame:
         """ This function take the exctracted dataframe and starts transforming the data (cleans the data)
@@ -65,7 +67,7 @@ class ETLModel:
         Args:
             dataframe (pd.DataFrame): _description_
         """
-        self.dataframe.to_csv('/var/lib/data/hidden_information.csv', encoding='utf-8', header=True, index=False)
+        self.dataframe.to_csv(f'{UPLOAD_FOLDER}/clean_data/transformed_data.csv', encoding='utf-8', header=True, index=False)
 
     def start_etl(self):
         """ Start the etl pipeline
