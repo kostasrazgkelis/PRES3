@@ -15,8 +15,10 @@ services:
         restart: always
         volumes:
             - ./src/services/front/:/src/app/
+            - shared-workspace:/opt/workspace
         networks:
             - front-back-net
+            - spark-net
 
     cluster-a:
         container_name: cluster-a
@@ -36,6 +38,7 @@ services:
             - ./src/services/app/:/src/app/
         networks:
             - front-back-net
+            - spark-net
 
     cluster-b:
         container_name: cluster-b
@@ -55,45 +58,34 @@ services:
             - ./src/services/app/:/src/app/
         networks:
             - front-back-net
+            - spark-net
 
-#    jupyter:
-#        container_name: jupyter
-#        build:
-#            context: ./infrastructures/jupyter
-#            dockerfile: Dockerfile
-#        ports:
-#            - "9000:8888"
-#        volumes:
-#            -  shared-workspace:/opt/workspace
-#        networks:
-#            - spark-net
-#
-#    master:
-#        build:
-#            context: infrastructures/spark
-#            dockerfile: Dockerfile
-#        container_name: master
-#        command: bash -c "start-master.sh && tail -F /dev/null"
-#        ports:
-#            - "7077:7077"
-#            - "8090:8080"
-#        volumes:
-#            -  shared-workspace:/opt/workspace
-#        networks:
-#            - spark-net
-#
-#    worker:
-#        build:
-#            context: infrastructures/spark
-#            dockerfile: Dockerfile
-#        environment:
-#            - SPARK_WORKER_CORES=3
-#            - SPARK_WORKER_MEMORY=2g
-#        command: bash -c "start-worker.sh spark://master:7077 && tail -F /dev/null"
-#        volumes:
-#            -  shared-workspace:/opt/workspace
-#        networks:
-#            - spark-net
+    master:
+        build:
+            context: infrastructures/spark
+            dockerfile: Dockerfile
+        container_name: master
+        command: bash -c "start-master.sh && tail -F /dev/null"
+        ports:
+            - "7077:7077"
+            - "8090:8080"
+        volumes:
+            -  shared-workspace:/opt/workspace
+        networks:
+            - spark-net
+
+    worker:
+        build:
+            context: infrastructures/spark
+            dockerfile: Dockerfile
+        environment:
+            - SPARK_WORKER_CORES=3
+            - SPARK_WORKER_MEMORY=2g
+        command: bash -c "start-worker.sh spark://master:7077 && tail -F /dev/null"
+        volumes:
+            -  shared-workspace:/opt/workspace
+        networks:
+            - spark-net
 
 volumes:    
     cluster-A-volume:

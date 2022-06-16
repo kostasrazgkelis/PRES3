@@ -55,7 +55,6 @@ def get(matching_field=None, noise=0):
     """
     columns = request.args.getlist('columns')
     file_name = request.args.get(key='name')
-
     if 1000 <= noise <= 0:
         response = app.response_class(
             status=400,

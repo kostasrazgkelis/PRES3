@@ -6,15 +6,11 @@ import os
 from werkzeug.utils import secure_filename
 import pandas as pd
 import requests
-
-HOST = '0.0.0.0'
-NAME_OF_CLUSTER = os.environ.get("NAME")
-PORT = os.environ.get("PORT")
-ENVIRONMENT_DEBUG = os.environ.get("DEBUG")
-UPLOAD_FOLDER_A = '/src/app/uploaded_files_cluster_a'
-UPLOAD_FOLDER_B = '/src/app/uploaded_files_cluster_b'
-
-ALLOWED_EXTENSIONS = {'csv'}
+from settings import HOST, NAME_OF_CLUSTER, PORT, \
+    ENVIRONMENT_DEBUG, SPARK_DISTRIBUTED_FILE_SYSTEM, \
+    UPLOAD_FOLDER_A, UPLOAD_FOLDER_B,\
+    ALLOWED_EXTENSIONS
+from packages.spark_commands import ThesisSparkClass
 
 app = Flask(__name__)
 
@@ -107,29 +103,38 @@ def post_data(matching_field: str, noise: int, files: dict, cluster: str, port: 
     url = f'http://{cluster}:{port}/upload_data/'
 
     requests.post(url=url, files=files)
-    result = requests.get(f'http://{cluster}:{port}/take_data/{matching_field}/{noise}', values)
+    response = requests.get(f'http://{cluster}:{port}/take_data/{matching_field}/{noise}', values)
 
-    # response = app.response_class(
-    #     status=200,
-    #     mimetype='application/json'
-    # )
-    return result
+    if response.status_code != 200:
+        response = app.response_class(
+            status=400,
+            mimetype='application/json'
+        )
+        return response
 
+    url_content = response.content
+    with open(f"{SPARK_DISTRIBUTED_FILE_SYSTEM}/{cluster}_download.csv", 'wb') as file:
+        file.write(url_content)
 
+    response = app.response_class(
+        status=200,
+        mimetype='application/json'
+    )
+    return response
+
+test_case_1 = ["NCID","last_name","first_name","midl_name","street_name", "res_city_desc","birth_age"]
 @app.route("/start/", methods=["POST"])
 def start():
     data = {"noise": 100,
             "matching_field": "NCID",
-            "file_a": {'name': '50K_A.csv', 'columns': ["NCID",
-                                                         "last_name",
-                                                         "first_name",
-                                                         "midl_name"]},
-            "file_b": {'name': '50K_B.csv', 'columns': ["NCID",
-                                                         "last_name",
-                                                         "midl_name"]}}
+            "file_a": {'name': '50K_A.csv', 'columns': test_case_1},
+            "file_b": {'name': '50K_B.csv', 'columns': test_case_1},
+            "prediction_size": 0.25
+        }
 
     noise = data['noise']
     matching_field = data['matching_field']
+    prediction_size = data['prediction_size']
 
     file_name = data['file_a']['name']
     values = {"name": file_name, "columns": data['file_a']['columns']}
@@ -152,7 +157,14 @@ def start():
                            values=values)
 
     if response_1.status_code == 200 or response_2.status_code == 200:
+        spark = ThesisSparkClass()
+        spark.main(matching_field= "NCID",
+                   prediction_size=prediction_size,
+                   noise=noise)
+        data = spark.get_metrics()
+
         response = app.response_class(
+            response=json.dumps(data),
             status=200,
             mimetype='application/json'
         )
