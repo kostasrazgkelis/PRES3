@@ -38,10 +38,22 @@ class ThesisSparkClass:
 
         condition = df_1.columns
         condition.remove(matching_field)
+        select_condition = condition.copy()
+
+        column_1 = f'df_1.{matching_field} as mf_1'
+        column_2 = f'df_2.{matching_field} as mf_2'
+        select_condition.append(column_1)
+        select_condition.append(column_2)
+
+        matched_data = df_1.join(other=df_2, on=condition, how='inner').selectExpr(select_condition)
+
         size = df_1.count()
-        matched_data = df_1.join(other=df_2, on=condition, how='inner').select('*')
         total_matches = matched_data.count()
-        true_positives = matched_data.where(f"{matching_field} != 'Fake Index'").select('*').count()
+        true_positives = matched_data.\
+            where("mf_1==mf_2 and (mf_1 != 'Fake Index' and mf_2 != 'Fake Index' ").\
+            select('*').\
+            count()
+
         false_positives = total_matches - true_positives
         precision = true_positives / (true_positives + false_positives)
         recall = true_positives / (prediction_size * size)
