@@ -1,14 +1,14 @@
 """
     The backend endpoints of our web application for the service A (Alice)
 """
-from flask import Flask, flash, send_file, request, redirect, render_template, json
+from flask import Flask, flash, request, redirect, render_template, json
 import os
 from werkzeug.utils import secure_filename
 import pandas as pd
 import requests
-from settings import HOST, NAME_OF_CLUSTER, PORT, \
+from settings import HOST, PORT, \
     ENVIRONMENT_DEBUG, SPARK_DISTRIBUTED_FILE_SYSTEM, \
-    UPLOAD_FOLDER_A, UPLOAD_FOLDER_B,\
+    UPLOAD_FOLDER_A, UPLOAD_FOLDER_B, \
     ALLOWED_EXTENSIONS
 from packages.spark_commands import ThesisSparkClass
 
@@ -67,11 +67,15 @@ def upload_file():
             filename = secure_filename(file_b.filename)
             file_b.save(os.path.join(app.config['UPLOAD_FOLDER_B'], filename))
 
-            return render_template('upload.html')
+            response = app.response_class(
+                status=200,
+                mimetype='application/json'
+            )
+            return response
     return render_template('upload.html')
 
 
-@app.route("/show_files/", methods=["GET", "POST"])
+@app.route("/show_files/", methods=["GET"])
 def show_files():
     # Return 404 if path doesn't exist
     if not os.path.exists(UPLOAD_FOLDER_A) or not os.path.exists(UPLOAD_FOLDER_B):
@@ -99,7 +103,6 @@ def show_files():
 
 
 def post_data(matching_field: str, noise: int, files: dict, cluster: str, port: int, values: dict):
-
     url = f'http://{cluster}:{port}/upload_data/'
 
     requests.post(url=url, files=files)
@@ -122,22 +125,17 @@ def post_data(matching_field: str, noise: int, files: dict, cluster: str, port: 
     )
     return response
 
-test_case_1 = ["NCID","last_name","first_name","midl_name","street_name", "res_city_desc","birth_age"]
+
 @app.route("/start/", methods=["POST"])
 def start():
-    data = {"noise": 100,
-            "matching_field": "NCID",
-            "file_a": {'name': '50K_A.csv', 'columns': test_case_1},
-            "file_b": {'name': '50K_B.csv', 'columns': test_case_1},
-            "prediction_size": 0.25
-        }
+    response = request.get_json()
 
-    noise = data['noise']
-    matching_field = data['matching_field']
-    prediction_size = data['prediction_size']
+    noise = response['noise']
+    matching_field = response['matching_field']
+    prediction_size = response['prediction_size']
 
-    file_name = data['file_a']['name']
-    values = {"name": file_name, "columns": data['file_a']['columns']}
+    file_name = response['file_a']['name']
+    values = {"name": file_name, "columns": response['file_a']['columns']}
     files = {'upload_file': open(UPLOAD_FOLDER_A + "/" + file_name, 'rb')}
     response_1 = post_data(matching_field=matching_field,
                            noise=noise,
@@ -146,8 +144,8 @@ def start():
                            port=9200,
                            values=values)
 
-    file_name = data['file_b']['name']
-    values = {"name": file_name, "columns": data['file_b']['columns']}
+    file_name = response['file_b']['name']
+    values = {"name": file_name, "columns": response['file_b']['columns']}
     files = {'upload_file': open(UPLOAD_FOLDER_B + "/" + file_name, 'rb')}
     response_2 = post_data(matching_field=matching_field,
                            noise=noise,
@@ -158,7 +156,7 @@ def start():
 
     if response_1.status_code == 200 or response_2.status_code == 200:
         spark = ThesisSparkClass()
-        spark.main(matching_field= "NCID",
+        spark.main(matching_field="NCID",
                    prediction_size=prediction_size,
                    noise=noise)
         data = spark.get_metrics()
@@ -175,6 +173,7 @@ def start():
         mimetype='application/json'
     )
     return response
+
 
 
 if __name__ == '__main__':

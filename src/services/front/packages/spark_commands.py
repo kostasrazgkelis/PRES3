@@ -38,19 +38,17 @@ class ThesisSparkClass:
 
         condition = df_1.columns
         condition.remove(matching_field)
-        select_condition = condition.copy()
+        condition.remove("birth_age")
 
-        column_1 = f'df_1.{matching_field} as mf_1'
-        column_2 = f'df_2.{matching_field} as mf_2'
-        select_condition.append(column_1)
-        select_condition.append(column_2)
+        df_1 = df_1.withColumnRenamed(matching_field, "MatchingFieldDF1")
+        df_2 = df_2.withColumnRenamed(matching_field, "MatchingFieldDF2")
 
-        matched_data = df_1.join(other=df_2, on=condition, how='inner').selectExpr(select_condition)
+        matched_data = df_1.join(other=df_2, on=condition, how='inner').select('*')
 
-        size = df_1.count()
+        size = int(100 * df_1.count() / (noise + 100))
         total_matches = matched_data.count()
         true_positives = matched_data.\
-            where("mf_1==mf_2 and (mf_1 != 'Fake Index' and mf_2 != 'Fake Index' ").\
+            where("MatchingFieldDF1==MatchingFieldDF2 and (MatchingFieldDF1 != 'Fake Index' and MatchingFieldDF2 != 'Fake Index')").\
             select('*').\
             count()
 
