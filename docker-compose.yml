@@ -1,20 +1,20 @@
 version: '3.0'
 
 services:
-    front:
-        container_name: front-end
+    backend:
+        container_name: backend
         build:
             context: .
-            dockerfile: infrastructures/front/Dockerfile
+            dockerfile: infrastructures/backend/Dockerfile
         ports:
             - "9000:9000"
         environment:
             - PORT=9000
             - DEBUG=1
-            - NAME=front
+            - NAME=backend
         restart: always
         volumes:
-            - ./src/services/front/:/src/app/
+            - ./src/services/backend/:/src/app/
             - shared-workspace:/opt/workspace
         networks:
             - front-back-net
@@ -91,7 +91,6 @@ volumes:
     cluster-A-volume:
     cluster-B-volume:
     shared-workspace:
-        name: "hadoop-distributed-file-system"
         driver: local
 
 networks:

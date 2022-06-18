@@ -20,10 +20,10 @@ RUN wget https://dlcdn.apache.org/spark/spark-3.2.1/spark-3.2.1-bin-hadoop3.2.tg
     mv spark-3.2.1-bin-hadoop3.2 /opt/spark && \
     rm spark-*
 
-COPY ./infrastructures/front/requirements.txt /requirements.txt
+COPY ./infrastructures/backend/requirements.txt /requirements.txt
 RUN pip3 install -r /requirements.txt
 
-COPY ./src/services/front /src/app
+COPY ./src/services/backend /src/app
 
 WORKDIR src
 
