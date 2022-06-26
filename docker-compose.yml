@@ -1,6 +1,22 @@
 version: '3.0'
 
 services:
+    front:
+        container_name: frontend
+        build:
+            context: .
+            dockerfile: infrastructures/front/Dockerfile
+        ports:
+            - "3000:3000"
+        environment:
+            - PORT=3000
+            - NAME=front
+        restart: always
+        volumes:
+            - ./src/services/front/:/src/app/
+        networks:
+            - front-back-net
+
     backend:
         container_name: backend
         build:

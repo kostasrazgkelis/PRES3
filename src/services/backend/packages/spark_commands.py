@@ -11,7 +11,7 @@ class ThesisSparkClass:
         self.spark = SparkSession.builder \
             .appName("pyspark-notebook") \
             .master("spark://master:7077") \
-            .config("spark.executor.memory", "2g") \
+            .config("spark.executor.memory", "1g") \
             .getOrCreate()
 
     def set_metrics(self):
@@ -38,7 +38,6 @@ class ThesisSparkClass:
 
         condition = df_1.columns
         condition.remove(matching_field)
-        condition.remove("birth_age")
 
         df_1 = df_1.withColumnRenamed(matching_field, "MatchingFieldDF1")
         df_2 = df_2.withColumnRenamed(matching_field, "MatchingFieldDF2")
@@ -64,3 +63,6 @@ class ThesisSparkClass:
         self.metrics_dict['TP'] = true_positives
         self.metrics_dict['FP'] = false_positives
         self.metrics_dict['noise'] = noise
+
+    def stop_spark(self):
+        self.spark.stop()
