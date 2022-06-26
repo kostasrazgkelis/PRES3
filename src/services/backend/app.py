@@ -11,9 +11,10 @@ from settings import HOST, PORT, \
     UPLOAD_FOLDER_A, UPLOAD_FOLDER_B, \
     ALLOWED_EXTENSIONS
 from packages.spark_commands import ThesisSparkClass
+from flask_cors import CORS, cross_origin
 
 app = Flask(__name__)
-
+CORS(app)
 
 def allowed_file(filename):
     return '.' in filename and \
@@ -38,17 +39,16 @@ def home():
 
 
 @app.route('/about/', methods=['GET'])
+@cross_origin()
 def about():
     return render_template('about.html')
 
 
-@app.route("/upload_files/", methods=["GET", "POST"])
+@app.route("/upload-files/", methods=["POST"])
+@cross_origin()
 def upload_file():
-    if request.method == 'GET':
-        return render_template('upload.html')
-
+    print('asd')
     if request.method == "POST":
-
         if 'uploadedFile_A' not in request.files or 'uploadedFile_B' not in request.files:
             flash('No file part')
             return redirect(request.url)
@@ -69,13 +69,17 @@ def upload_file():
 
             response = app.response_class(
                 status=200,
-                mimetype='application/json'
             )
             return response
-    return render_template('upload.html')
+
+        response = app.response_class(
+            status=400,
+        )
+        return response
 
 
 @app.route("/show_files/", methods=["GET"])
+@cross_origin()
 def show_files():
     # Return 404 if path doesn't exist
     if not os.path.exists(UPLOAD_FOLDER_A) or not os.path.exists(UPLOAD_FOLDER_B):
@@ -93,7 +97,6 @@ def show_files():
     data_b = [get_data_from_file(UPLOAD_FOLDER_B, filename=file) for file in files_b]
 
     data = {'files_a': data_a, 'files_b': data_b}
-
     response = app.response_class(
         response=json.dumps(data),
         status=200,
@@ -127,6 +130,7 @@ def post_data(matching_field: str, noise: int, files: dict, cluster: str, port: 
 
 
 @app.route("/start/", methods=["POST"])
+@cross_origin()
 def start():
     response = request.get_json()
 

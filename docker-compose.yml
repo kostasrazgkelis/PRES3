@@ -95,13 +95,14 @@ services:
             context: infrastructures/spark
             dockerfile: Dockerfile
         environment:
-            - SPARK_WORKER_CORES=3
+            - SPARK_WORKER_CORES=2
             - SPARK_WORKER_MEMORY=2g
         command: bash -c "start-worker.sh spark://master:7077 && tail -F /dev/null"
         volumes:
             -  shared-workspace:/opt/workspace
         networks:
             - spark-net
+
 
 volumes:    
     cluster-A-volume:

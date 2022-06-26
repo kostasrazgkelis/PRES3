@@ -8,6 +8,6 @@ COPY ./infrastructures/front /src
 
 RUN npm install
 
-COPY . /src
+COPY ./src/services/front /src
 
 CMD ["npm", "start"]

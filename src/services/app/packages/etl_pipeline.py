@@ -23,7 +23,6 @@ class ETLModel:
 
     def extract_data(self) -> pd.DataFrame:
         """ This function exctracts the data from a source location. (e.g csv file)
-
         Returns:
             pd.DataFrame: A pandas dataframe
         """
@@ -31,12 +30,10 @@ class ETLModel:
 
     def transform_data(self) -> pd.DataFrame:
         """ This function take the exctracted dataframe and starts transforming the data (cleans the data)
-
         Args:
             matching_field (str): the column which will be used to make the join operation to find our matches
             noise (int): The percentage of the noise we are going to use in our dataset (e.g. 10%, 20%)
             dataframe (pd.DataFrame): The dataframe with the data
-
         Returns:
             pd.DataFrame: The transformed data
         """
@@ -63,7 +60,6 @@ class ETLModel:
 
     def load_data(self):
         """ Loads the data to a dumpfile (csv file) and stores them in the storage inside the container
-
         Args:
             dataframe (pd.DataFrame): _description_
         """
