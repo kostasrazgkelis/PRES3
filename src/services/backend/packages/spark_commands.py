@@ -11,7 +11,8 @@ class ThesisSparkClass:
         self.spark = SparkSession.builder \
             .appName("pyspark-notebook") \
             .master("spark://master:7077") \
-            .config("spark.executor.memory", "1g") \
+            .config("spark.executor.memory", "1700m") \
+            .enableHiveSupport() \
             .getOrCreate()
 
     def set_metrics(self):
@@ -32,7 +33,7 @@ class ThesisSparkClass:
     def read_csv(self, file_name: str) -> DataFrame:
         return self.spark.read.csv(path=f"{SPARK_DISTRIBUTED_FILE_SYSTEM}/{file_name}", sep=",", header=True)
 
-    def main(self, matching_field, prediction_size, noise):
+    def main(self, matching_field: str, prediction_size: int, noise: int):
         df_1 = self.read_csv(file_name='cluster-a_download.csv')
         df_2 = self.read_csv(file_name='cluster-b_download.csv')
 
@@ -44,16 +45,16 @@ class ThesisSparkClass:
 
         matched_data = df_1.join(other=df_2, on=condition, how='inner').select('*')
 
-        size = int(100 * df_1.count() / (noise + 100))
-        total_matches = matched_data.count()
+        size = int(100 * df_1.count() / (int(noise) + 100))
+        total_matches = int(matched_data.count())
         true_positives = matched_data.\
             where("MatchingFieldDF1==MatchingFieldDF2 and (MatchingFieldDF1 != 'Fake Index' and MatchingFieldDF2 != 'Fake Index')").\
             select('*').\
             count()
 
-        false_positives = total_matches - true_positives
+        false_positives = int(total_matches - true_positives)
         precision = true_positives / (true_positives + false_positives)
-        recall = true_positives / (prediction_size * size)
+        recall = true_positives / (float(prediction_size) * size)
 
         self.metrics_dict['size'] = size
         self.metrics_dict['total_matches'] = total_matches

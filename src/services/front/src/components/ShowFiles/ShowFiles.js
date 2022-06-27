@@ -82,7 +82,7 @@ export default function ShowFiles({filesA, setFilesA, filesB, setFilesB,}) {
            try{
             let res = await getFiles();
             console.log('Response ', res);
-            setFiles(res);
+            setFiles(res.data);
 
         }catch(error){
             setFiles(filesRes)
@@ -92,11 +92,12 @@ export default function ShowFiles({filesA, setFilesA, filesB, setFilesB,}) {
     }
     useEffect(() => {
         if(!files) return;
+
         let a = files['files_a'];
         let b = files['files_b'];
             
         let FAarr = [];
-        let FBarr = []
+        let FBarr = [];
         
         /* Manipulation of A files */
         for(let el of a){
@@ -225,7 +226,7 @@ export default function ShowFiles({filesA, setFilesA, filesB, setFilesB,}) {
             }
         }
 
-        if(!objA || !objB || !properties.precision || !properties.noise){
+        if(!objA || !objB || !properties.precision || !properties.noise || !properties.matching_field){
             setOpen(true);
             return;
         }
@@ -234,19 +235,22 @@ export default function ShowFiles({filesA, setFilesA, filesB, setFilesB,}) {
         postRes.file_b = objB;
         postRes.prediction_size = properties.precision;
         postRes.noise = properties.noise;
-        postRes.matching_field = 'NCID';
+        postRes.matching_field = properties.matching_field;
 
         /* POST HERE */
         console.log('Post Res', postRes);
+        setLoadingJoin(true);
         try{
             /* let res = await join(postRes);
             console.log('Response ', res); */
             const response = await axios.post('http://localhost:9000/start/', postRes);
             console.log('RESPONSE ', response);
-            setResults(response);
+            setResults(response.data);
+            setLoadingJoin(false);
 
         }catch(error){
             console.log('ERROR ', error);
+            setLoadingJoin(false);
         }
     }
 
@@ -298,42 +302,44 @@ export default function ShowFiles({filesA, setFilesA, filesB, setFilesB,}) {
     
     return (
         <ToolbarWrapper>
-            {!results ? <div>
+            {loadingJoin? <h2>LOADING RESULTS</h2> : <> {!results ? <div>
                 <div>
-                    <p className={styles.MarginBottom}>Files A</p>
-                    {displayAFiles}
+                <p className={styles.MarginBottom}>Files A</p>
+            {displayAFiles}
                 </div>
 
                 <div className={styles.MarginTop}>
-                    <p className={styles.MarginBottom}>Files B</p>
-                    {displayBFiles} 
+                <p className={styles.MarginBottom}>Files B</p>
+            {displayBFiles}
                 </div>
 
                 <div className={styles.MarginTopSmall}>
-                    <input placeholder='Add precision' name='precision' type='number' step={0.05} onChange={handeProperties}/>
-                    <input placeholder='Add noise' name='noise' type='number' onChange={handeProperties}/>
+                <input placeholder='Add precision' name='precision' type='number' step={0.05} onChange={handeProperties}/>
+                <input placeholder='Add noise' name='noise' type='number' onChange={handeProperties}/>
+                <input placeholder='Add matching field' name='matching_field' type='text' onChange={handeProperties}/>
+
                 </div>
-              
+
                 <button className={styles.MarginTopXSmall} onClick={join}>JOIN</button>
-                
+
                 <Snackbar open={open} autoHideDuration={4000} onClose={handleClose}>
-                    <Alert onClose={handleClose} severity="error" sx={{ width: '100%' }}>
-                    You must selected one file of each category and fill the prediction size and noise!
-                    </Alert>
+                <Alert onClose={handleClose} severity="error" sx={{width: '100%'}}>
+                You must selected one file of each category and fill the prediction size and noise!
+                </Alert>
                 </Snackbar>
-            </div>:
-            <div>
-                <p>Size: {results.size}</p>
-                <p>Prediction: {results.prediction}</p>
-                <p>Precision: {results.precision}</p>
-                <p>Recall: {results.recall}</p>
-                <p>TP: {results.TP}</p>
-                <p>FP: {results.FP}</p>
-                <p>Total Matches: {results.total_matches}</p>
-                <p>Noise: {results.nois}</p>
-            </div>
-            
-            }
+                </div>:
+                <div>
+                    <p>Size: {results.size}</p>
+                    <p>Prediction: {results.prediction}</p>
+                    <p>Precision: {results.precision}</p>
+                    <p>Recall: {results.recall}</p>
+                    <p>TP: {results.TP}</p>
+                    <p>FP: {results.FP}</p>
+                    <p>Total Matches: {results.total_matches}</p>
+                    <p>Noise: {results.noise}</p>
+                </div>
+
+            }</>}
             
         </ToolbarWrapper>
     )

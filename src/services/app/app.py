@@ -49,7 +49,6 @@ def post():
 @app.route("/take_data/<matching_field>/<int:noise>", methods=["GET"])
 def get(matching_field=None, noise=0):
     """ The main get function that starts the ETL pipeline and return to Carol the encrypted data
-
     Returns:
         http_response: The file with the encrypted data
     """
