@@ -11,7 +11,8 @@ class ThesisSparkClass:
         self.spark = SparkSession.builder \
             .appName("pyspark-notebook") \
             .master("spark://master:7077") \
-            .config("spark.executor.memory", "1g") \
+            .config("spark.executor.memory", "1700m") \
+            .enableHiveSupport() \
             .getOrCreate()
 
     def set_metrics(self):

@@ -33,21 +33,26 @@ def get_data_from_file(directory: str, filename: str) -> dict:
     return result_dict
 
 
-@app.route('/', methods=['GET'])
-def home():
-    return render_template('main.html')
+# @app.route('/', methods=['GET'])
+# def home():
+#     return render_template('main.html')
 
 
-@app.route('/about/', methods=['GET'])
-@cross_origin()
-def about():
-    return render_template('about.html')
+# @app.route('/about/', methods=['GET'])
+# @cross_origin()
+# def about():
+#     return render_template('about.html')
 
 
-@app.route("/upload-files/", methods=["POST"])
+@app.route("/upload-files",  methods=['GET', 'POST']) 
 @cross_origin()
 def upload_file():
-    print('asd')
+    if request.method == 'GET':
+        response = app.response_class(
+            status=200
+        )
+        return response
+
     if request.method == "POST":
         if 'uploadedFile_A' not in request.files or 'uploadedFile_B' not in request.files:
             flash('No file part')

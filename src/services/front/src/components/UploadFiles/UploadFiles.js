@@ -2,7 +2,6 @@ import React, {useState} from 'react'
 import ToolbarWrapper from '../Toolbar/Toolbar'
 import { uploadFiles } from '../../service';
 import styles from './uploadFiles.module.css';
-import axios from 'axios';
 
 export default function UploadFiles() {
     const [fileA, setFileA] = useState(null);
@@ -22,26 +21,14 @@ export default function UploadFiles() {
 
   }
 
-    const uploadAllFiles = async() => {
+    const uploadAllFiles = async(event) => {
+        event.preventDefault();
         let formData = new FormData();
-       
-       
-        formData.append('file', fileA);
-        formData.append('file', fileB);
-      
+        formData.append('uploadedFile_A', fileA);
+        formData.append('uploadedFile_B', fileB);
 
-        // axios({
-        //   url: 'http://localhost:9000/upload-files/',
-        //   method: 'POST',
-        //   data: formData
-        // }).then((res) =>{
-        //   console.log('UPLOAD FILE RESPONSE ', res);
-        // },
-        // (error)=>{
-        //   console.log('ERROR ', error);
-        // })
         try{
-            const response = await axios.post('http://localhost:9000/upload-files/', formData);
+            const response = await uploadFiles(formData);
             console.log('RESPONSE', response);
         }catch(error){
             console.log('ERROR ', error);
@@ -70,6 +57,5 @@ export default function UploadFiles() {
            
         </form>
     </ToolbarWrapper>
-   
   )
 }
