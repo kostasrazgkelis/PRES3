@@ -90,6 +90,7 @@ services:
         networks:
             - spark-net
 
+
     worker:
         build:
             context: infrastructures/spark
@@ -102,6 +103,8 @@ services:
             -  shared-workspace:/opt/workspace
         networks:
             - spark-net
+        depends_on:
+            - master
 
 
 volumes:    

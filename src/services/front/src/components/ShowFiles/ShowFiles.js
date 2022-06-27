@@ -91,7 +91,6 @@ export default function ShowFiles({filesA, setFilesA, filesB, setFilesB,}) {
       
     }
     useEffect(() => {
-        console.log(files);
         if(!files) return;
 
         let a = files['files_a'];
