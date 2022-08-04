@@ -27,3 +27,7 @@
 npm-debug.log*
 yarn-debug.log*
 yarn-error.log*
+/.idea/
+/src/services/front/node_modules/
+/src/services/front-c/node_modules/
+/.env
