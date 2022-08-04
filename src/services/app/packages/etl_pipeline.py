@@ -1,73 +1,107 @@
-import pandas as pd
-import packages.transformation_functions as tf
-from settings import UPLOAD_FOLDER
+from pyspark.sql.functions import udf, col
+from pyspark.sql.types import StringType
+from pyspark.sql import SparkSession
+from pyspark import SparkConf
 import jellyfish
+import random
 import hashlib
+from settings import UPLOAD_FOLDER, SPARK_DISTRIBUTED_FILE_SYSTEM, NAME_OF_CLUSTER
+import socket
 
-correct_path = f'/var/lib/data/datafile.csv'
-
-
-class ETLModel:
+class ThesisSparkClassETLModel:
     """
         This is the ETL class model that will be used in backend for our application.
         The ETL pipeline is rensponsible for the excraction, transformation and loading
         the data.
     """
 
-    def __init__(self, file_name: str, columns: list, matching_field: str, noise: int):
+    def __init__(self, 
+                 file_name: str, 
+                 columns: list, 
+                 matching_field: str, 
+                 noise: int):
+        
         self.matching_field = matching_field
         self.noise = noise
         self.file_name = file_name
         self.columns = columns
         self.dataframe = None
+        self.df_with_noise = None
 
-    def extract_data(self) -> pd.DataFrame:
-        """ This function exctracts the data from a source location. (e.g csv file)
-        Returns:
-            pd.DataFrame: A pandas dataframe
-        """
-        self.dataframe = pd.read_csv(UPLOAD_FOLDER + '/' + self.file_name, header=0).astype('string')
+        spark_driver_host = socket.gethostname()
+        self.spark_conf = SparkConf() \
+            .setAll([
+                ('spark.master', f'spark://master:7077'),
+                ('spark.driver.bindAddress', '0.0.0.0'),
+                ('spark.driver.host', spark_driver_host),
+                ('spark.app.name', NAME_OF_CLUSTER),
+                ('spark.submit.deployMode', 'client'),
+                ('spark.ui.showConsoleProgress', 'true'),
+                ('spark.eventLog.enabled', 'false'),
+                ('spark.logConf', 'false'),
+                ('spark.cores.max', "4"),
+                ("spark.executor.memory", "1g"),
+                ('spark.driver.memory', '15g'),
+            ])
 
-    def transform_data(self) -> pd.DataFrame:
-        """ This function take the exctracted dataframe and starts transforming the data (cleans the data)
-        Args:
-            matching_field (str): the column which will be used to make the join operation to find our matches
-            noise (int): The percentage of the noise we are going to use in our dataset (e.g. 10%, 20%)
-            dataframe (pd.DataFrame): The dataframe with the data
-        Returns:
-            pd.DataFrame: The transformed data
-        """
-        columns_we_care = self.columns
-        columns_we_care.remove(self.matching_field)
+        
+        self.spark = SparkSession.builder \
+            .appName("pyspark-notebook-C") \
+            .master("spark://master:7077") \
+            .config(conf=self.spark_conf)\
+            .enableHiveSupport() \
+            .getOrCreate()
+        self.spark = SparkSession.builder \
+            .appName("pyspark-notebook") \
+            .master("spark://master:7077") \
+            .config("spark.executor.memory", "1700m") \
+            .enableHiveSupport() \
+            .getOrCreate()
+        self.spark.sparkContext.accumulator(0)
 
-        fake_soundex_values = tf.create_fake_soundex_values(self.noise, self.dataframe, self.matching_field)
-
-        for column in columns_we_care:
-            # Applies to the data the jellyfish-soundex function and also encodes them with the SHA256 encryption
-            self.dataframe[column] = self.dataframe[column] \
-                .apply(lambda x: jellyfish.soundex(str(x))) \
-                .apply(lambda x: hashlib.sha256(x.encode()).hexdigest())
-
-            # Creates fake soundex values
-            fake_soundex_values[column] = fake_soundex_values[column].apply(
-                lambda x: hashlib.sha256(x.encode()).hexdigest())
-
-        # We merge all the fake soundex data with the correct
-        merged_data = pd.concat([self.dataframe, fake_soundex_values], axis=0).sort_values(by='first_name')
-        merged_data.reset_index(drop=True, inplace=True)
-
-        self.dataframe = merged_data
-
+    @staticmethod
+    @udf(StringType())
+    def jelly(data):
+        return jellyfish.soundex(data)
+    
+    @staticmethod
+    @udf(StringType())
+    def hash_sha256(data):
+        return hashlib.sha256(data.encode()).hexdigest()
+    
+    def create_alp(self) -> str:
+        return str(chr(random.randrange(65, 90))) + str(chr(random.randrange(48, 54))) + str(chr(random.randrange(48, 54))) + str(chr(random.randrange(48, 54)))
+    
+    def extract_data(self):
+        self.dataframe = self.spark.read.csv(SPARK_DISTRIBUTED_FILE_SYSTEM + f"{NAME_OF_CLUSTER}_pretransformed_data/"+ self.file_name, header=True)
+        
+    def transform_data(self):
+        self.dataframe = self.dataframe.na.drop('any')
+        columns = self.dataframe.columns
+        size = int(self.dataframe.count() * (self.noise/100) )
+        data = [{(col): (self.create_alp() if not col==self.matching_field else 'Fake Index') for col in columns} for _ in range(0 , size)] 
+        
+        #create noise
+        df_with_noise = self.spark.createDataFrame(data, columns)
+        
+        #add noise
+        self.dataframe = self.dataframe.union(df_with_noise)
+        
+        #apply Soundex + SHA256
+        self.dataframe = self.dataframe.select([self.hash_sha256(self.jelly(col(column))).alias(column) 
+                                                if not column == self.matching_field else col(column).alias(column)
+                                                for column in columns])
+        
+        #sort by a random column
+        self.dataframe = self.dataframe.sort(random.choice(columns))
+    
     def load_data(self):
-        """ Loads the data to a dumpfile (csv file) and stores them in the storage inside the container
-        Args:
-            dataframe (pd.DataFrame): _description_
-        """
-        self.dataframe.to_csv(f'{UPLOAD_FOLDER}/clean_data/transformed_data.csv', encoding='utf-8', header=True, index=False)
+        self.dataframe.coalesce(1).write.format('com.databricks.spark.csv').mode('overwrite').save(SPARK_DISTRIBUTED_FILE_SYSTEM + f'{NAME_OF_CLUSTER}_transformed_data', header='true')
 
     def start_etl(self):
-        """ Start the etl pipeline
-        """
         self.extract_data()
         self.transform_data()
         self.load_data()
+        self.spark.stop()
+        
+                      

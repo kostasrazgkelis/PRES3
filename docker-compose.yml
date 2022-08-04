@@ -1,13 +1,60 @@
 version: '3.0'
 
 services:
-    front:
-        container_name: frontend
+    front-a:
+        container_name: ${FRONT_CLUSTER_A}
         build:
             context: .
             dockerfile: infrastructures/front/Dockerfile
+            args:
+               - REACT_APP_URI_HOST=http://localhost:9200
         ports:
             - "3000:3000"
+        environment:
+            - PORT=3000
+            - NAME=front
+        restart: always
+        env_file:
+            - .env
+        volumes:
+            - ./src/services/front/:/src/app/
+        networks:
+            - cluster-a-network
+
+
+    cluster-a:
+        container_name: ${BACK_CLUSTER_A}
+        build:
+            context: .
+            args:
+                NAME: ${CLUSTER_A}
+            dockerfile: infrastructures/app/Dockerfile
+        ports:
+            - "9200:9200"
+        environment:
+            - PORT=9200
+            - DEBUG=1
+            - NAME=${CLUSTER_A}
+        restart: always
+        env_file:
+            - .env
+        volumes:
+            - ./src/services/app/:/src/app/
+            -  shared-workspace:/opt/workspace
+        networks:
+            - spark-net
+            - cluster-a-network
+        depends_on:
+            - master
+
+    front-b:
+        build:
+            context: .
+            dockerfile: infrastructures/front/Dockerfile
+            args:
+                - REACT_APP_URI_HOST=http://localhost:9300
+        ports:
+            - "3001:3000"
         environment:
             - PORT=3000
             - NAME=front
@@ -15,46 +62,8 @@ services:
         volumes:
             - ./src/services/front/:/src/app/
         networks:
-            - front-back-net
+            - cluster-b-network
 
-    backend:
-        container_name: backend
-        build:
-            context: .
-            dockerfile: infrastructures/backend/Dockerfile
-        ports:
-            - "9000:9000"
-        environment:
-            - PORT=9000
-            - DEBUG=1
-            - NAME=backend
-        restart: always
-        volumes:
-            - ./src/services/backend/:/src/app/
-            - shared-workspace:/opt/workspace
-        networks:
-            - front-back-net
-            - spark-net
-
-    cluster-a:
-        container_name: cluster-a
-        build:
-            context: .
-            args:
-                NAME: cluster_a
-            dockerfile: infrastructures/app/Dockerfile
-        ports:
-            - "9200:9200"
-        environment:
-            - PORT=9200
-            - DEBUG=1
-            - NAME=cluster_a
-        restart: always
-        volumes:
-            - ./src/services/app/:/src/app/
-        networks:
-            - front-back-net
-            - spark-net
 
     cluster-b:
         container_name: cluster-b
@@ -72,9 +81,58 @@ services:
         restart: always
         volumes:
             - ./src/services/app/:/src/app/
+            -  shared-workspace:/opt/workspace
         networks:
-            - front-back-net
             - spark-net
+            - cluster-b-network
+        depends_on:
+            - master
+
+    front-c:
+        build:
+            context: .
+            dockerfile: infrastructures/front-c/Dockerfile
+            args:
+               - REACT_APP_URI_HOST=http://localhost:9000
+        ports:
+            - "3002:3000"
+        environment:
+            - PORT=3000
+            - NAME=front
+        restart: always
+        volumes:
+            - ./src/services/front-c/:/src/app/
+        networks:
+            - cluster-c-network
+
+
+    backend:
+        container_name: backend
+        build:
+            context: .
+            dockerfile: infrastructures/backend/Dockerfile
+        ports:
+            - "9000:9000"
+        environment:
+            - PORT=9000
+            - DEBUG=1
+            - NAME=backend
+        restart: always
+        volumes:
+            - ./src/services/backend/:/src/app/
+            - shared-workspace:/opt/workspace
+        networks:
+            - spark-net
+        depends_on:
+            - master
+
+    # jupyter:
+    #     image: jupyter/all-spark-notebook
+    #     ports:
+    #         - "8888:8888"
+    #     volumes:
+    #         -  shared-workspace:/opt/workspace
+
 
     master:
         build:
@@ -99,6 +157,8 @@ services:
             - SPARK_WORKER_CORES=2
             - SPARK_WORKER_MEMORY=2g
         command: bash -c "start-worker.sh spark://master:7077 && tail -F /dev/null"
+        deploy:
+            replicas: 2
         volumes:
             -  shared-workspace:/opt/workspace
         networks:
@@ -116,6 +176,9 @@ volumes:
 networks:
     spark-net:
     front-back-net:
+    cluster-a-network:
+    cluster-b-network:
+    cluster-c-network:
 
 
 

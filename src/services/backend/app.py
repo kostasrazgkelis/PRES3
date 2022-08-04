@@ -1,7 +1,7 @@
 """
     The backend endpoints of our web application for the service A (Alice)
 """
-from flask import Flask, flash, request, redirect, render_template, json
+from flask import Flask, flash, request, redirect, json
 import os
 from werkzeug.utils import secure_filename
 import pandas as pd
@@ -33,61 +33,20 @@ def get_data_from_file(directory: str, filename: str) -> dict:
     return result_dict
 
 
-# @app.route('/', methods=['GET'])
-# def home():
-#     return render_template('main.html')
+@app.route('/', methods=['GET'])
+def home():
+    response = app.response_class(
+        status=200
+    )
+    return response
 
 
-# @app.route('/about/', methods=['GET'])
-# @cross_origin()
-# def about():
-#     return render_template('about.html')
-
-
-@app.route("/upload-files",  methods=['GET', 'POST']) 
-@cross_origin()
-def upload_file():
-    if request.method == 'GET':
-        response = app.response_class(
-            status=200
-        )
-        return response
-
-    if request.method == "POST":
-        if 'uploadedFile_A' not in request.files or 'uploadedFile_B' not in request.files:
-            flash('No file part')
-            return redirect(request.url)
-
-        file_a = request.files['uploadedFile_A']
-        file_b = request.files['uploadedFile_B']
-
-        if file_a.filename == '' or file_b.filename == '':
-            flash('No selected file')
-            return redirect(request.url)
-
-        if file_a and allowed_file(file_a.filename) and file_b and allowed_file(file_b.filename):
-            filename = secure_filename(file_a.filename)
-            file_a.save(os.path.join(app.config['UPLOAD_FOLDER_A'], filename))
-
-            filename = secure_filename(file_b.filename)
-            file_b.save(os.path.join(app.config['UPLOAD_FOLDER_B'], filename))
-
-            response = app.response_class(
-                status=200,
-            )
-            return response
-
-        response = app.response_class(
-            status=400,
-        )
-        return response
-
-
-@app.route("/show_files/", methods=["GET"])
+@app.route("/show-files", methods=["GET"])
 @cross_origin()
 def show_files():
     # Return 404 if path doesn't exist
-    if not os.path.exists(UPLOAD_FOLDER_A) or not os.path.exists(UPLOAD_FOLDER_B):
+    if not os.path.exists(SPARK_DISTRIBUTED_FILE_SYSTEM + 'cluster_a_transformed_data') or \
+            not os.path.exists(SPARK_DISTRIBUTED_FILE_SYSTEM + 'cluster_b_transformed_data'):
         response = app.response_class(
             status=400,
             mimetype='application/json'
@@ -95,11 +54,14 @@ def show_files():
         return response
 
     # Show directory contents
-    files_a = os.listdir(UPLOAD_FOLDER_A)
-    files_b = os.listdir(UPLOAD_FOLDER_B)
+    files_a = os.listdir(SPARK_DISTRIBUTED_FILE_SYSTEM + 'cluster_a_transformed_data')
+    files_b = os.listdir(SPARK_DISTRIBUTED_FILE_SYSTEM + 'cluster_b_transformed_data')
 
-    data_a = [get_data_from_file(UPLOAD_FOLDER_A, filename=file) for file in files_a]
-    data_b = [get_data_from_file(UPLOAD_FOLDER_B, filename=file) for file in files_b]
+    data_a = [get_data_from_file(SPARK_DISTRIBUTED_FILE_SYSTEM + 'cluster_a_transformed_data', filename=file)
+              for file in files_a if file.endswith('.csv')]
+
+    data_b = [get_data_from_file(SPARK_DISTRIBUTED_FILE_SYSTEM + 'cluster_b_transformed_data', filename=file)
+              for file in files_b if file.endswith('.csv')]
 
     data = {'files_a': data_a, 'files_b': data_b}
     response = app.response_class(
@@ -134,61 +96,36 @@ def post_data(matching_field: str, noise: int, files: dict, cluster: str, port: 
     return response
 
 
-@app.route("/start/", methods=["POST"])
+@app.route("/start", methods=["POST"])
 @cross_origin()
 def start():
     response = request.get_json()
 
-    noise = response['noise']
+    noise = int(response['noise'])
     matching_field = response['matching_field']
     prediction_size = response['prediction_size']
 
-    file_name = response['file_a']['name']
-    values = {"name": file_name, "columns": response['file_a']['columns']}
-    files = {'upload_file': open(UPLOAD_FOLDER_A + "/" + file_name, 'rb')}
-    response_1 = post_data(matching_field=matching_field,
-                           noise=noise,
-                           files=files,
-                           cluster="cluster-a",
-                           port=9200,
-                           values=values)
+    cluster_a_file = response['file_a']['name']
+    cluster_b_file = response['file_b']['name']
 
-    file_name = response['file_b']['name']
-    values = {"name": file_name, "columns": response['file_b']['columns']}
-    files = {'upload_file': open(UPLOAD_FOLDER_B + "/" + file_name, 'rb')}
-    response_2 = post_data(matching_field=matching_field,
-                           noise=noise,
-                           files=files,
-                           cluster="cluster-b",
-                           port=9300,
-                           values=values)
+    spark = ThesisSparkClass(file_a=cluster_a_file,
+                             file_b=cluster_b_file,
+                             matching_field=matching_field,
+                             prediction_size=prediction_size,
+                             noise=noise)
 
-    if response_1.status_code == 200 or response_2.status_code == 200:
-        spark = ThesisSparkClass()
-        spark.main(matching_field="NCID",
-                   prediction_size=prediction_size,
-                   noise=noise)
-        data = spark.get_metrics()
-
-        spark.stop_spark()
-        response = app.response_class(
-            response=json.dumps(data),
-            status=200,
-            mimetype='application/json'
-        )
-        return response
+    spark.start_etl()
+    data = spark.get_metrics()
 
     response = app.response_class(
-        status=400,
+        response=json.dumps(data),
+        status=200,
         mimetype='application/json'
     )
     return response
 
 
-
 if __name__ == '__main__':
-    app.config['UPLOAD_FOLDER_A'] = UPLOAD_FOLDER_A
-    app.config['UPLOAD_FOLDER_B'] = UPLOAD_FOLDER_B
     app.config['SECRET_KEY'] = 'super secret key'
     app.config['SESSION_TYPE'] = 'filesystem'
 
