@@ -1,20 +1,18 @@
 """
     The backend endpoints of our web application for the service A (Alice)
 """
-from flask import Flask, flash, request, redirect, json
 import os
-from werkzeug.utils import secure_filename
+from flask import Flask, flash, request, redirect, json
 import pandas as pd
-import requests
 from settings import HOST, PORT, \
     ENVIRONMENT_DEBUG, SPARK_DISTRIBUTED_FILE_SYSTEM, \
-    UPLOAD_FOLDER_A, UPLOAD_FOLDER_B, \
     ALLOWED_EXTENSIONS
 from packages.spark_commands import ThesisSparkClass
 from flask_cors import CORS, cross_origin
 
 app = Flask(__name__)
 CORS(app)
+
 
 def allowed_file(filename):
     return '.' in filename and \
@@ -66,30 +64,6 @@ def show_files():
     data = {'files_a': data_a, 'files_b': data_b}
     response = app.response_class(
         response=json.dumps(data),
-        status=200,
-        mimetype='application/json'
-    )
-    return response
-
-
-def post_data(matching_field: str, noise: int, files: dict, cluster: str, port: int, values: dict):
-    url = f'http://{cluster}:{port}/upload_data/'
-
-    requests.post(url=url, files=files)
-    response = requests.get(f'http://{cluster}:{port}/take_data/{matching_field}/{noise}', values)
-
-    if response.status_code != 200:
-        response = app.response_class(
-            status=400,
-            mimetype='application/json'
-        )
-        return response
-
-    url_content = response.content
-    with open(f"{SPARK_DISTRIBUTED_FILE_SYSTEM}/{cluster}_download.csv", 'wb') as file:
-        file.write(url_content)
-
-    response = app.response_class(
         status=200,
         mimetype='application/json'
     )
