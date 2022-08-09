@@ -1,23 +1,28 @@
 """
     The backend endpoints of our web application for the service A (Alice)
 """
-from flask import Flask, flash, send_file, request, redirect, json
+import requests
+from flask import Flask, flash, request, redirect, json
 import os
 from os.path import isfile, join
+
+from connector import upload_file
 from packages.etl_pipeline import ThesisSparkClassETLModel
 from werkzeug.utils import secure_filename
-from settings import HOST, NAME_OF_CLUSTER, PORT, ENVIRONMENT_DEBUG, UPLOAD_FOLDER, ALLOWED_EXTENSIONS, SPARK_DISTRIBUTED_FILE_SYSTEM
+from settings import HOST, NAME_OF_CLUSTER, PORT, ENVIRONMENT_DEBUG, UPLOAD_FOLDER, ALLOWED_EXTENSIONS, \
+    SPARK_DISTRIBUTED_FILE_SYSTEM, HDFS
 from flask_cors import CORS, cross_origin
 import pandas as pd
 import shutil
 
-
 app = Flask(__name__)
 CORS(app)
+
 
 def allowed_file(filename):
     return '.' in filename and \
            filename.rsplit('.', 1)[1].lower() in ALLOWED_EXTENSIONS
+
 
 def get_data_from_file(directory: str, filename: str) -> dict:
     result_dict = {'name': None,
@@ -30,7 +35,8 @@ def get_data_from_file(directory: str, filename: str) -> dict:
     result_dict['columns'] = columns
     return result_dict
 
-@app.route("/upload-file", methods=['GET','POST'])
+
+@app.route("/upload-file", methods=['GET', 'POST'])
 @cross_origin()
 def post():
     if request.method == 'GET':
@@ -49,16 +55,39 @@ def post():
             filename = secure_filename(file.filename)
             file.save(os.path.join(app.config['UPLOAD_FOLDER'], filename))
 
-
         response = app.response_class(
             status=200,
         )
         return response
 
     response = app.response_class(
-    status=400,
+        status=400,
     )
     return response
+
+
+@app.route("/hdfs", methods=["GET"])
+@cross_origin()
+def hdfs():
+    # Return 404 if path doesn't exist
+    if not os.path.exists(SPARK_DISTRIBUTED_FILE_SYSTEM):
+        response = app.response_class(
+            status=400,
+            mimetype='application/json'
+        )
+        return response
+
+    # Show directory contents
+    onlyfiles = [f for f in os.listdir(SPARK_DISTRIBUTED_FILE_SYSTEM) if isfile(join(SPARK_DISTRIBUTED_FILE_SYSTEM, f))]
+    data = {'files': [get_data_from_file(SPARK_DISTRIBUTED_FILE_SYSTEM, filename=file) for file in onlyfiles]}
+
+    response = app.response_class(
+        response=json.dumps(data),
+        status=200,
+        mimetype='application/json'
+    )
+    return response
+
 
 @app.route("/show-files", methods=["GET"])
 @cross_origin()
@@ -72,7 +101,7 @@ def show_files():
         return response
 
     # Show directory contents
- 
+
     onlyfiles = [f for f in os.listdir(UPLOAD_FOLDER) if isfile(join(UPLOAD_FOLDER, f))]
     data = {'files': [get_data_from_file(UPLOAD_FOLDER, filename=file) for file in onlyfiles]}
 
@@ -82,6 +111,7 @@ def show_files():
         mimetype='application/json'
     )
     return response
+
 
 @app.route("/take-data", methods=["POST", "GET"])
 @cross_origin()
@@ -95,14 +125,14 @@ def get():
             status=200
         )
         return response
-        
+
     response = request.get_json()
 
     noise = int(response['noise'])
     matching_field = response['matching_field']
     columns = response['file_a']['columns']
     file_name = response['file_a']['name']
-    
+
     if 1000 <= noise <= 0:
         response = app.response_class(
             status=400
@@ -121,18 +151,19 @@ def get():
         )
         return response
 
-    shutil.copy(UPLOAD_FOLDER + file_name, SPARK_DISTRIBUTED_FILE_SYSTEM + f'{NAME_OF_CLUSTER}_pretransformed_data')
-    etl_object = ThesisSparkClassETLModel(file_name=file_name,
-                                          columns=columns,
-                                          matching_field=matching_field,
-                                          noise=noise)
-    etl_object.start_etl()
+    file_name = UPLOAD_FOLDER + '/' + file_name
 
-    
-    response = app.response_class(
+    if upload_file(file_name=file_name):
+        etl_object = ThesisSparkClassETLModel(file_name=file_name,
+                                              columns=columns,
+                                              matching_field=matching_field,
+                                              noise=noise)
+        etl_object.start_etl()
+
+        response = app.response_class(
             status=200
         )
-    return response
+        return response
 
 
 if __name__ == '__main__':

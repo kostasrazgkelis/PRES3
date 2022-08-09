@@ -67,8 +67,9 @@ class ThesisSparkClassETLModel:
             chr(random.randrange(48, 54))) + str(chr(random.randrange(48, 54)))
 
     def extract_data(self):
-        self.dataframe = self.spark.read.csv(
-            SPARK_DISTRIBUTED_FILE_SYSTEM + f"{NAME_OF_CLUSTER}_pretransformed_data/" + self.file_name, header=True)
+        pass
+        # self.dataframe = self.spark.read.csv(
+        #     SPARK_DISTRIBUTED_FILE_SYSTEM + f"{NAME_OF_CLUSTER}_pretransformed_data/" + self.file_name, header=True)
 
     def transform_data(self):
         self.dataframe = self.dataframe.na.drop('any')
