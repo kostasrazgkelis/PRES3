@@ -2,7 +2,7 @@
     The backend endpoints of our web application for the service A (Alice)
 """
 import os
-from flask import Flask, flash, request, redirect, json
+from flask import Flask, request, json
 import pandas as pd
 from settings import HOST, PORT, \
     ENVIRONMENT_DEBUG, SPARK_DISTRIBUTED_FILE_SYSTEM, \
