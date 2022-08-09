@@ -25,7 +25,6 @@ function App() {
     }
   ]);
   const [filesA, setFilesA] = useState(null);
-  const [filesB, setFilesB] = useState(null);
 
   const uploadCompletedFiles = () => {
     /* State */
@@ -38,7 +37,8 @@ function App() {
       <Router>
         <Routes>
           <Route path="/" element={<Home/>} />
-          <Route path="/all-files" element={<ShowFiles filesA={filesA} setFilesA={setFilesA} filesB={filesB} setFilesB={setFilesB}/>} />
+          <Route path="/all-files" element={<ShowFiles filesA={filesA} setFilesA={setFilesA}/>} />
+          <Route path="/hdfs" element={<ShowFiles filesA={filesA} setFilesA={setFilesA}/>} />
           <Route path="/upload-files" element={<UploadFiles/>} />
         </Routes>
     </Router>
