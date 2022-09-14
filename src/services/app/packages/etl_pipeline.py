@@ -1,29 +1,41 @@
+import os
 import socket
 import random
 import hashlib
 import jellyfish
+import requests
+import json
+from pyspark.context import SparkContext as sc
 from pyspark.sql.functions import udf, col
 from pyspark.sql.types import StringType
-from pyspark.sql import SparkSession
+from pyspark.sql import SparkSession, DataFrame
 from pyspark import SparkConf
 from settings import SPARK_DISTRIBUTED_FILE_SYSTEM, NAME_OF_CLUSTER
+from connector import HDFSConnector as HDFS
+
+EXTRACT_DIRECTORY = SPARK_DISTRIBUTED_FILE_SYSTEM + "input/"
+LOAD_DIRECTORY = SPARK_DISTRIBUTED_FILE_SYSTEM + f'{NAME_OF_CLUSTER}_pretransformed_data'
+MATCHED_DIRECTORY = SPARK_DISTRIBUTED_FILE_SYSTEM + f'{NAME_OF_CLUSTER}_matched_data'
+JOINED_DIRECTORY = SPARK_DISTRIBUTED_FILE_SYSTEM + f'joined_data'
 
 
 class ThesisSparkClassETLModel:
     """
         This is the ETL class model that will be used in backend for our application.
-        The ETL pipeline is rensponsible for the excraction, transformation and loading
+        The ETL pipeline is responsible for the extraction, transformation and loading
         the data.
     """
 
     def __init__(self,
-                 file_name: str,
-                 columns: list,
+                 hdfs: HDFS,
+                 filename: str,
                  matching_field: str,
-                 noise: int):
+                 columns: list = None,
+                 noise: int = None):
+        self.hdfs_obj = hdfs
         self.matching_field = matching_field
+        self.filename = filename
         self.noise = noise
-        self.file_name = file_name
         self.columns = columns
         self.dataframe = None
         self.df_with_noise = None
@@ -67,9 +79,7 @@ class ThesisSparkClassETLModel:
             chr(random.randrange(48, 54))) + str(chr(random.randrange(48, 54)))
 
     def extract_data(self):
-        pass
-        # self.dataframe = self.spark.read.csv(
-        #     SPARK_DISTRIBUTED_FILE_SYSTEM + f"{NAME_OF_CLUSTER}_pretransformed_data/" + self.file_name, header=True)
+        self.dataframe = self.spark.read.csv(EXTRACT_DIRECTORY + self.filename, header=True)
 
     def transform_data(self):
         self.dataframe = self.dataframe.na.drop('any')
@@ -93,11 +103,45 @@ class ThesisSparkClassETLModel:
         self.dataframe = self.dataframe.sort(random.choice(columns))
 
     def load_data(self):
-        self.dataframe.coalesce(1).write.format('com.databricks.spark.csv').mode('overwrite').save(
-            SPARK_DISTRIBUTED_FILE_SYSTEM + f'{NAME_OF_CLUSTER}_transformed_data', header='true')
+        """
+        Save the files in a specific directory in the HDFS
+        Returns:
+
+        """
+        self.dataframe.coalesce(1).write.format('com.databricks.spark.csv'). \
+            mode('overwrite'). \
+            save(LOAD_DIRECTORY, header='true')
 
     def start_etl(self):
         self.extract_data()
         self.transform_data()
         self.load_data()
         self.spark.stop()
+
+
+class ThesisSparkClassCheckFake(ThesisSparkClassETLModel):
+
+    def __init__(self, hdfs: HDFS, filename: str, matching_field: str, joined_data_filename: str):
+        super().__init__(hdfs, filename, matching_field)
+        self.joined_data_filename = joined_data_filename
+        self.dataframe_joined_data = None
+        self.matched_data = None
+
+    def extract_data(self):
+        self.dataframe = self.spark.read.csv(os.path.join(LOAD_DIRECTORY, self.filename), header=True)
+        self.dataframe_joined_data = self.spark.read.csv(os.path.join(JOINED_DIRECTORY, self.joined_data_filename),
+                                                         header=True)
+
+    def transform_data(self):
+        self.dataframe_joined_data = self.dataframe_joined_data.withColumnRenamed(self.matching_field, "MatchingField")
+        self.dataframe = self.dataframe.withColumnRenamed(self.matching_field, "MatchingField")
+        self.dataframe = self.dataframe.na.drop('any')
+
+        self.matched_data = self.dataframe.join(other=self.dataframe_joined_data, on="MatchingField", how='left') \
+            .select('*') \
+            .where('MatchingField!="Fake Index"')
+
+    def load_data(self):
+        self.matched_data.coalesce(1).write.format('com.databricks.spark.csv'). \
+            mode('overwrite'). \
+            save(MATCHED_DIRECTORY, header='true')

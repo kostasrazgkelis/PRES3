@@ -2,8 +2,10 @@
     The backend endpoints of our web application for the service A (Alice)
 """
 import os
+import requests
 from flask import Flask, request, json
 import pandas as pd
+from connector import HDFSConnector
 from settings import HOST, PORT, \
     ENVIRONMENT_DEBUG, SPARK_DISTRIBUTED_FILE_SYSTEM, \
     ALLOWED_EXTENSIONS
@@ -82,6 +84,30 @@ def start():
     cluster_a_file = response['file_a']['name']
     cluster_b_file = response['file_b']['name']
 
+    # hdfs = HDFSConnector(hdfs_base_url="http://localhost:9500/")
+    #
+    # response = requests.get('http://hdfs:9500/')
+    # if response.status_code != 200:
+    #     app.logger.error('The HDFS is not connected')
+    #     response = app.response_class(
+    #         response=json.dumps({'message': "The HDFS is not connected."}),
+    #         status=400,
+    #         mimetype='application/json'
+    #     )
+    #     return response
+
+    # if hdfs.check_hdfs() is False:
+    #     app.logger.error('The HDFS is not connected')
+    #     response = app.response_class(
+    #         response=json.dumps({'message': "The HDFS is not connected."}),
+    #         status=400,
+    #         mimetype='application/json'
+    #     )
+    #     return response
+
+    # cluster_a_file = hdfs.download_file(file=cluster_a_file)
+    # cluster_b_file = hdfs.download_file(file=cluster_b_file)
+
     spark = ThesisSparkClass(file_a=cluster_a_file,
                              file_b=cluster_b_file,
                              matching_field=matching_field,
@@ -89,7 +115,9 @@ def start():
                              noise=noise)
 
     spark.start_etl()
-    data = spark.get_metrics()
+    data = {
+        "message": 'The join operation has finished.'
+    }
 
     response = app.response_class(
         response=json.dumps(data),

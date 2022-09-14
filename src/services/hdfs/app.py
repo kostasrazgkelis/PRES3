@@ -1,59 +1,102 @@
-from flask import Flask, flash, request, redirect, json
+from flask import Flask, flash, request, redirect, json, make_response, jsonify, send_file
 import os
 from os.path import isfile, join
 from werkzeug.utils import secure_filename
-from settings import HOST, PORT, ENVIRONMENT_DEBUG, SPARK_DISTRIBUTED_FILE_SYSTEM
+from settings import HOST, PORT, ENVIRONMENT_DEBUG, SPARK_DISTRIBUTED_FILE_SYSTEM, NAME_OF_CLUSTER
 from flask_cors import CORS, cross_origin
-from utils import get_data_from_file
-import logging
+from utils import get_data_from_file, allowed_file
 
 app = Flask(__name__)
 CORS(app)
 
+@app.route("/", methods=["GET"])
+@cross_origin()
+def main():
+    app.logger.info('A connection has been established.')
+    data = {
+        'message': 'The HDFS is active.'
+    }
+
+    response = app.response_class(
+        status=200,
+        response=json.dumps(data),
+        mimetype='application/json'
+    )
+    return response
+
+
 @app.route("/show-files", methods=["GET"])
 @cross_origin()
 def hdfs():
+    content = request.get_json(silent=True)
+
+    if 'directory' not in content:
+        response = app.response_class(
+            status=404,
+            response=json.dumps({'message': 'The dir does not exist'}),
+            mimetype='application/json'
+        )
+        return response
 
     # Return 404 if path doesn't exist
-    if not os.path.exists(SPARK_DISTRIBUTED_FILE_SYSTEM):
+    directory = join(SPARK_DISTRIBUTED_FILE_SYSTEM + content['directory'])
+
+    if not os.path.exists(directory):
         response = app.response_class(
-            status=400,
+            status=404,
+            response=json.dumps({'message': 'The files does not exist'}),
             mimetype='application/json'
         )
         return response
 
     # Show directory contents
-    onlyfiles = [f for f in os.listdir(SPARK_DISTRIBUTED_FILE_SYSTEM) if isfile(join(SPARK_DISTRIBUTED_FILE_SYSTEM, f))]
-    data = {'files': [get_data_from_file(SPARK_DISTRIBUTED_FILE_SYSTEM, filename=file) for file in onlyfiles]}
+
+    files = [get_data_from_file(directory=directory, filename=file)
+             for file in [f for f in os.listdir(directory)
+                          if isfile(join(directory, f)) and allowed_file(f)]]
+
+    data = {
+        'files': files
+    }
 
     response = app.response_class(
-        response=json.dumps(data),
         status=200,
+        response=json.dumps(data),
         mimetype='application/json'
     )
     return response
 
-@app.route("/take-file", methods=["GET"])
+
+@app.route("/take-file/<directory>", methods=["GET"])
 @cross_origin()
-def get():
-    content = request.get_json(silent=True)
-    file = content['file']
-    if isfile(join(SPARK_DISTRIBUTED_FILE_SYSTEM, file)):
-        data = {
-            'file': file,
-            'data': (file, open(join(SPARK_DISTRIBUTED_FILE_SYSTEM, file), 'rb').read())
-        }
+def get(directory):
+    if directory not in ['joined_data', 'cluster_a_pretransformed_data', 'cluster_b_pretransformed_data']:
         response = app.response_class(
-            response=json.dumps(data),
-            status=200,
-            mimetype='application/json'
+            status=400,
+            response=json.dumps({'message': 'Wrong directory specified. Choose joined_data/cluster_a_pretransformed_data/cluster_b_pretransformed_data'}),
         )
         return response
 
+    content = request.get_json(silent=True)
+    if 'file' not in content:
+        response = app.response_class(
+            status=400,
+            response=json.dumps({'message': 'File not specified'}),
+        )
+        return response
+
+    file = content['file']
+
+    path = join(join(SPARK_DISTRIBUTED_FILE_SYSTEM, directory), file)
+    if isfile(path):
+        return send_file(filename_or_fp=path, as_attachment=True)
+
     response = app.response_class(
         status=400,
+        response=json.dumps({'message': 'File does not exist.'}),
     )
     return response
+
 
 @app.route("/upload-file", methods=['GET', 'POST'])
 @cross_origin()
@@ -67,13 +110,16 @@ def post():
     if request.method == 'POST':
         if 'uploadedFile' not in request.files:
             app.logger.warning("HDFS: The file was not found.")
-            return redirect(request.url)
+            response = app.response_class(
+                status=404,
+                response=json.dumps({'message': 'The file was not found.'})
+            )
+            return response
 
         file = request.files['uploadedFile']
-        if file:
-            filename = secure_filename(file.filename)
-            file.save(os.path.join(app.config['UPLOAD_FOLDER'], filename))
-            app.logger.info("HDFS: FIle has been uploaded to the HDFS.")
+        filename = secure_filename(file.filename)
+        file.save(os.path.join(app.config['UPLOAD_FOLDER'], filename))
+        app.logger.info("HDFS: FIle has been uploaded to the HDFS.")
 
         response = app.response_class(
             status=200,
@@ -88,7 +134,7 @@ def post():
 
 
 if __name__ == '__main__':
-    app.config['UPLOAD_FOLDER'] = SPARK_DISTRIBUTED_FILE_SYSTEM
+    app.config['UPLOAD_FOLDER'] = SPARK_DISTRIBUTED_FILE_SYSTEM + 'input'
     app.config['SECRET_KEY'] = 'super secret key'
     app.config['SESSION_TYPE'] = 'filesystem'
 

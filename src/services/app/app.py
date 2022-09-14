@@ -6,14 +6,13 @@ from flask import Flask, flash, request, redirect, json
 import os
 from os.path import isfile, join
 
-from connector import upload_file
-from packages.etl_pipeline import ThesisSparkClassETLModel
+from connector import HDFSConnector
+from packages.etl_pipeline import ThesisSparkClassETLModel, ThesisSparkClassCheckFake
 from werkzeug.utils import secure_filename
-from settings import HOST, NAME_OF_CLUSTER, PORT, ENVIRONMENT_DEBUG, UPLOAD_FOLDER, ALLOWED_EXTENSIONS, \
-    SPARK_DISTRIBUTED_FILE_SYSTEM, HDFS
+from settings import HOST, PORT, ENVIRONMENT_DEBUG, UPLOAD_FOLDER, ALLOWED_EXTENSIONS, \
+    SPARK_DISTRIBUTED_FILE_SYSTEM, NAME_OF_CLUSTER
 from flask_cors import CORS, cross_origin
 import pandas as pd
-import shutil
 
 app = Flask(__name__)
 CORS(app)
@@ -39,16 +38,22 @@ def get_data_from_file(directory: str, filename: str) -> dict:
 @app.route("/upload-file", methods=['GET', 'POST'])
 @cross_origin()
 def post():
+
     if request.method == 'GET':
         response = app.response_class(
-            status=200
+            status=200,
         )
         return response
 
     if request.method == 'POST':
         if 'uploadedFile' not in request.files:
             flash('No file part')
-            return redirect(request.url)
+            response = app.response_class(
+                status=400,
+                response=json.dumps({"message": "Invalid input."})
+
+            )
+            return response
 
         file = request.files['uploadedFile']
         if file:
@@ -57,6 +62,8 @@ def post():
 
         response = app.response_class(
             status=200,
+            response=json.dumps({"message": "The file has been uploaded."})
+
         )
         return response
 
@@ -78,8 +85,12 @@ def hdfs():
         return response
 
     # Show directory contents
-    onlyfiles = [f for f in os.listdir(SPARK_DISTRIBUTED_FILE_SYSTEM) if isfile(join(SPARK_DISTRIBUTED_FILE_SYSTEM, f))]
-    data = {'files': [get_data_from_file(SPARK_DISTRIBUTED_FILE_SYSTEM, filename=file) for file in onlyfiles]}
+    response = requests.get('http://hdfs:9500/show-files', json={"directory": "joined_data"})
+    joined_data = json.loads(response.content)['files'][0]['name']
+
+    data = {
+        'joined': joined_data,
+    }
 
     response = app.response_class(
         response=json.dumps(data),
@@ -112,6 +123,40 @@ def show_files():
     )
     return response
 
+@app.route("/send-data", methods=['GET'])
+@cross_origin()
+def send():
+    response = request.args
+
+    matching_field: str = response['matching_field']
+    joined_data_filename: str = response['joined_data_filename']
+    file_name: str = response['file_name']
+
+    hdfs_obj = HDFSConnector()
+
+    if not hdfs_obj.check_hdfs():
+        app.logger.info("Could not connect to HDFS.")
+        response = app.response_class(
+            status=400
+        )
+        return response
+    app.logger.info("Connected to HDFS.")
+
+    #response = hdfs_obj.upload_file(path=UPLOAD_FOLDER, file_name=file_name)
+
+    etl_object = ThesisSparkClassCheckFake(hdfs=hdfs_obj,
+                                           filename=file_name,
+                                           joined_data_filename=joined_data_filename,
+                                           matching_field=matching_field)
+    etl_object.start_etl()
+    app.logger.info(f"TEST: {etl_object.matched_data.show()}")
+
+    response = app.response_class(
+        status=200,
+        response=json.dumps({'message': 'File has been transformed.'})
+    )
+    return response
+
 
 @app.route("/take-data", methods=["POST", "GET"])
 @cross_origin()
@@ -128,10 +173,23 @@ def get():
 
     response = request.get_json()
 
+    if "noise" not in response or \
+        "matching_field" not in response or \
+        "file" not in response or \
+        "columns" not in response['file'] or \
+        "name" not in response['file']:
+        response = app.response_class(
+            status=400
+        )
+        return response
+
+
     noise = int(response['noise'])
     matching_field = response['matching_field']
-    columns = response['file_a']['columns']
-    file_name = response['file_a']['name']
+    columns = response['file']['columns']
+    file_name = response['file']['name']
+
+    hdfs_obj = HDFSConnector()
 
     if 1000 <= noise <= 0:
         response = app.response_class(
@@ -139,29 +197,33 @@ def get():
         )
         return response
 
-    if not matching_field:
+    if not os.path.exists(UPLOAD_FOLDER + file_name):
         response = app.response_class(
             status=400
         )
         return response
 
-    if not os.path.exists(UPLOAD_FOLDER + '/' + file_name):
+    if not hdfs_obj.check_hdfs():
         response = app.response_class(
             status=400
         )
         return response
+    app.logger.info("Connected to HDFS.")
 
-    file_name = UPLOAD_FOLDER + '/' + file_name
 
-    if upload_file(file_name=file_name):
-        etl_object = ThesisSparkClassETLModel(file_name=file_name,
+    response = hdfs_obj.upload_file(path=UPLOAD_FOLDER, file_name=file_name)
+    if response.status_code == 200:
+        etl_object = ThesisSparkClassETLModel(hdfs=hdfs_obj,
                                               columns=columns,
+                                              filename=file_name,
                                               matching_field=matching_field,
                                               noise=noise)
+
         etl_object.start_etl()
 
         response = app.response_class(
-            status=200
+            status=200,
+            response=json.dumps({'message': 'File has been transformed.'})
         )
         return response
 
