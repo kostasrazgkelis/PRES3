@@ -30,6 +30,8 @@ COPY ./src/services/backend/__init__.py /src/app/__init__.py
 
 WORKDIR /src/app/
 
+RUN mkdir -p /opt/workspace/input
+
 #It defines the port number the container should expose
 
 #Finally, in order our container to run the python 

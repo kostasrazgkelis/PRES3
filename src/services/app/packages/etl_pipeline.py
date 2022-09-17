@@ -10,6 +10,7 @@ from pyspark.sql.functions import udf, col
 from pyspark.sql.types import StringType
 from pyspark.sql import SparkSession, DataFrame
 from pyspark import SparkConf
+
 from settings import SPARK_DISTRIBUTED_FILE_SYSTEM, NAME_OF_CLUSTER
 from connector import HDFSConnector as HDFS
 
@@ -53,7 +54,7 @@ class ThesisSparkClassETLModel:
             ('spark.logConf', 'false'),
             ('spark.cores.max', "4"),
             ("spark.executor.memory", "1g"),
-            ('spark.driver.memory', '15g'),
+            ('spark.driver.memory', '15g')
         ])
 
         self.spark = SparkSession.builder \
@@ -113,11 +114,13 @@ class ThesisSparkClassETLModel:
             save(LOAD_DIRECTORY, header='true')
 
     def start_etl(self):
-        self.extract_data()
-        self.transform_data()
-        self.load_data()
-        self.spark.stop()
-
+        try:
+            self.extract_data()
+            self.transform_data()
+            self.load_data()
+            self.spark.stop()
+        except Exception as e:
+            return e
 
 class ThesisSparkClassCheckFake(ThesisSparkClassETLModel):
 
@@ -137,9 +140,11 @@ class ThesisSparkClassCheckFake(ThesisSparkClassETLModel):
         self.dataframe = self.dataframe.withColumnRenamed(self.matching_field, "MatchingField")
         self.dataframe = self.dataframe.na.drop('any')
 
-        self.matched_data = self.dataframe.join(other=self.dataframe_joined_data, on="MatchingField", how='left') \
-            .select('*') \
-            .where('MatchingField!="Fake Index"')
+        self.matched_data = self.dataframe.join(other=self.dataframe_joined_data, on=["MatchingField"], how='left')\
+            .select(self.dataframe["*"])\
+            .where("MatchingField!='Fake Index'")
+
+        self.dataframe = self.dataframe.withColumnRenamed("MatchingField", self.matching_field)
 
     def load_data(self):
         self.matched_data.coalesce(1).write.format('com.databricks.spark.csv'). \

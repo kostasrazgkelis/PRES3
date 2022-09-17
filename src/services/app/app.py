@@ -2,7 +2,7 @@
     The backend endpoints of our web application for the service A (Alice)
 """
 import requests
-from flask import Flask, flash, request, redirect, json
+from flask import Flask, flash, request, json, send_file
 import os
 from os.path import isfile, join
 
@@ -38,7 +38,6 @@ def get_data_from_file(directory: str, filename: str) -> dict:
 @app.route("/upload-file", methods=['GET', 'POST'])
 @cross_origin()
 def post():
-
     if request.method == 'GET':
         response = app.response_class(
             status=200,
@@ -123,6 +122,7 @@ def show_files():
     )
     return response
 
+
 @app.route("/send-data", methods=['GET'])
 @cross_origin()
 def send():
@@ -142,20 +142,28 @@ def send():
         return response
     app.logger.info("Connected to HDFS.")
 
-    #response = hdfs_obj.upload_file(path=UPLOAD_FOLDER, file_name=file_name)
+    # response = hdfs_obj.upload_file(path=UPLOAD_FOLDER, file_name=file_name)
 
     etl_object = ThesisSparkClassCheckFake(hdfs=hdfs_obj,
                                            filename=file_name,
                                            joined_data_filename=joined_data_filename,
                                            matching_field=matching_field)
-    etl_object.start_etl()
-    app.logger.info(f"TEST: {etl_object.matched_data.show()}")
+    result = etl_object.start_etl()
+    if result:
+        app.logger.info(f"There was an error: {result}")
+        response = app.response_class(
+            status=400,
+            response=json.dumps({'message': 'There was an error.'})
+        )
+        return response
 
-    response = app.response_class(
-        status=200,
-        response=json.dumps({'message': 'File has been transformed.'})
-    )
-    return response
+    path = f"{SPARK_DISTRIBUTED_FILE_SYSTEM}{NAME_OF_CLUSTER}_matched_data/"
+    file = [f for f in os.listdir(path) if isfile(join(path, f)) and f.endswith('.csv')][0]
+
+    return send_file(filename_or_fp=join(path, file),
+                     mimetype="text/csv",
+                     attachment_filename=f'{NAME_OF_CLUSTER}_matched_data.csv',
+                     as_attachment=True)
 
 
 @app.route("/take-data", methods=["POST", "GET"])
@@ -174,15 +182,14 @@ def get():
     response = request.get_json()
 
     if "noise" not in response or \
-        "matching_field" not in response or \
-        "file" not in response or \
-        "columns" not in response['file'] or \
-        "name" not in response['file']:
+            "matching_field" not in response or \
+            "file" not in response or \
+            "columns" not in response['file'] or \
+            "name" not in response['file']:
         response = app.response_class(
             status=400
         )
         return response
-
 
     noise = int(response['noise'])
     matching_field = response['matching_field']
@@ -209,7 +216,6 @@ def get():
         )
         return response
     app.logger.info("Connected to HDFS.")
-
 
     response = hdfs_obj.upload_file(path=UPLOAD_FOLDER, file_name=file_name)
     if response.status_code == 200:
