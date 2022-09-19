@@ -45,22 +45,22 @@ def home():
 @cross_origin()
 def show_files():
     # Return 404 if path doesn't exist
-    if not os.path.exists(SPARK_DISTRIBUTED_FILE_SYSTEM + 'cluster_a_transformed_data') or \
-            not os.path.exists(SPARK_DISTRIBUTED_FILE_SYSTEM + 'cluster_b_transformed_data'):
+    if not os.path.exists(SPARK_DISTRIBUTED_FILE_SYSTEM + 'cluster_a_pretransformed_data') or \
+            not os.path.exists(SPARK_DISTRIBUTED_FILE_SYSTEM + 'cluster_b_pretransformed_data'):
         response = app.response_class(
-            status=400,
+            status=404,
             mimetype='application/json'
         )
         return response
 
     # Show directory contents
-    files_a = os.listdir(SPARK_DISTRIBUTED_FILE_SYSTEM + 'cluster_a_transformed_data')
-    files_b = os.listdir(SPARK_DISTRIBUTED_FILE_SYSTEM + 'cluster_b_transformed_data')
+    files_a = os.listdir(SPARK_DISTRIBUTED_FILE_SYSTEM + 'cluster_a_pretransformed_data')
+    files_b = os.listdir(SPARK_DISTRIBUTED_FILE_SYSTEM + 'cluster_b_pretransformed_data')
 
-    data_a = [get_data_from_file(SPARK_DISTRIBUTED_FILE_SYSTEM + 'cluster_a_transformed_data', filename=file)
+    data_a = [get_data_from_file(SPARK_DISTRIBUTED_FILE_SYSTEM + 'cluster_a_pretransformed_data', filename=file)
               for file in files_a if file.endswith('.csv')]
 
-    data_b = [get_data_from_file(SPARK_DISTRIBUTED_FILE_SYSTEM + 'cluster_b_transformed_data', filename=file)
+    data_b = [get_data_from_file(SPARK_DISTRIBUTED_FILE_SYSTEM + 'cluster_b_pretransformed_data', filename=file)
               for file in files_b if file.endswith('.csv')]
 
     data = {'files_a': data_a, 'files_b': data_b}
@@ -108,13 +108,14 @@ def start():
     # cluster_a_file = hdfs.download_file(file=cluster_a_file)
     # cluster_b_file = hdfs.download_file(file=cluster_b_file)
 
-    spark = ThesisSparkClass(file_a=cluster_a_file,
-                             file_b=cluster_b_file,
-                             matching_field=matching_field,
-                             prediction_size=prediction_size,
-                             noise=noise)
+    # spark = ThesisSparkClass(file_a=cluster_a_file,
+    #                          file_b=cluster_b_file,
+    #                          matching_field=matching_field,
+    #                          prediction_size=prediction_size,
+    #                          noise=noise)
+    #
+    # spark.start_etl()
 
-    spark.start_etl()
     data = {
         "message": 'The join operation has finished.'
     }

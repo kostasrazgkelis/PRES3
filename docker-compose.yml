@@ -1,25 +1,27 @@
 version: '3.0'
 
 services:
-#    front-a:
-#        container_name: ${FRONT_CLUSTER_A}
-#        build:
-#            context: .
-#            dockerfile: infrastructures/front/Dockerfile
-#            args:
-#               - REACT_APP_URI_HOST=http://localhost:9200
-#        ports:
-#            - "3000:3000"
-#        environment:
-#            - PORT=3000
-#            - NAME=front
-#        restart: always
-#        env_file:
-#            - .env
-#        volumes:
-#            - ./src/services/front/:/src/app/
-#        networks:
-#            - cluster-a-network
+    front-a:
+        container_name: front-cluster-a
+        build:
+            context: .
+            dockerfile: infrastructures/front/Dockerfile
+            args:
+               - REACT_APP_URI_HOST=http://localhost:9200
+               - REACT_APP_HDFS_HOST=http://localhost:9500
+               - REACT_APP_NAME_OF_CLUSTER=Cluster A
+        ports:
+            - "3000:3000"
+        environment:
+            - PORT=3000
+            - NAME=front
+        restart: always
+        env_file:
+            - .env
+        volumes:
+            - ./src/services/front/:/src/app/
+        networks:
+            - cluster-a-network
 
 
     hdfs:
@@ -43,7 +45,7 @@ services:
             - spark-net
 
     cluster-a:
-        container_name: cluster-a
+        container_name: back-cluster-a
         build:
             context: .
             args:
@@ -67,27 +69,29 @@ services:
         depends_on:
             - master
 
-#    front-b:
-#        build:
-#            context: .
-#            dockerfile: infrastructures/front/Dockerfile
-#            args:
-#                - REACT_APP_URI_HOST=http://localhost:9300
-#        ports:
-#            - "3001:3000"
-#        environment:
-#            - PORT=3000
-#            - NAME=front
-#        restart: always
-#        volumes:
-#            - ./src/services/front/:/src/app/
-#        networks:
-#            - cluster-b-network
+    front-b:
+        build:
+            context: .
+            dockerfile: infrastructures/front/Dockerfile
+            args:
+                - REACT_APP_URI_HOST=http://localhost:9300
+                - REACT_APP_HDFS_HOST=http://localhost:9500
+                - REACT_APP_NAME_OF_CLUSTER=Cluster B
+        ports:
+            - "3001:3000"
+        environment:
+            - PORT=3000
+            - NAME=front
+        restart: always
+        volumes:
+            - ./src/services/front/:/src/app/
+        networks:
+            - cluster-b-network
 
 
     cluster-b:
-        container_name: cluster-b
-        build: 
+        container_name: back-cluster-b
+        build:
             context: .
             args:
                 NAME: cluster_b
@@ -108,22 +112,24 @@ services:
         depends_on:
             - master
 
-#    front-c:
-#        build:
-#            context: .
-#            dockerfile: infrastructures/front-c/Dockerfile
-#            args:
-#               - REACT_APP_URI_HOST=http://localhost:9000
-#        ports:
-#            - "3002:3000"
-#        environment:
-#            - PORT=3000
-#            - NAME=front
-#        restart: always
-#        volumes:
-#            - ./src/services/front-c/:/src/app/
-#        networks:
-#            - cluster-c-network
+    front-c:
+        build:
+            context: .
+            dockerfile: infrastructures/front-c/Dockerfile
+            args:
+                - REACT_APP_URI_HOST=http://localhost:9000
+                - REACT_APP_HDFS_HOST=http://localhost:9500
+                - REACT_APP_NAME_OF_CLUSTER=Cluster C
+        ports:
+            - "3002:3000"
+        environment:
+            - PORT=3000
+            - NAME=front
+        restart: always
+        volumes:
+            - ./src/services/front-c/:/src/app/
+        networks:
+            - cluster-c-network
 
 
     backend:
@@ -159,24 +165,24 @@ services:
             -  shared-workspace:/opt/workspace
         networks:
             - spark-net
-
-
-    worker:
-        build:
-            context: infrastructures/spark
-            dockerfile: Dockerfile
-        environment:
-            - SPARK_WORKER_CORES=2
-            - SPARK_WORKER_MEMORY=2g
-        command: bash -c "start-worker.sh spark://master:7077 && tail -F /dev/null"
-        deploy:
-            replicas: 2
-        volumes:
-            -  shared-workspace:/opt/workspace
-        networks:
-            - spark-net
-        depends_on:
-            - master
+#
+#
+#    worker:
+#        build:
+#            context: infrastructures/spark
+#            dockerfile: Dockerfile
+#        environment:
+#            - SPARK_WORKER_CORES=1
+#            - SPARK_WORKER_MEMORY=3g
+#        command: bash -c "start-worker.sh spark://master:7077 && tail -F /dev/null"
+#        deploy:
+#            replicas: 2
+#        volumes:
+#            -  shared-workspace:/opt/workspace
+#        networks:
+#            - spark-net
+#        depends_on:
+#            - master
 
 
 volumes:    

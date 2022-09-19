@@ -3,14 +3,15 @@ import ToolbarWrapper from '../Toolbar/Toolbar';
 import styles from './showFiles.module.css';
 import Snackbar from '@mui/material/Snackbar';
 import MuiAlert from '@mui/material/Alert';
-import { getFiles, join } from '../../service';
+import { getJoinedFileFromHDFS } from '../../service';
 import axios from 'axios';
+
 
 const Alert = React.forwardRef(function Alert(props, ref) {
   return <MuiAlert elevation={6} ref={ref} variant="filled" {...props} />;
 });
 
-export default function ShowFiles({filesA, setFilesA, filesB, setFilesB}) {
+export default function ShowFiles({filesA, setFilesA}) {
 
     const [properties, setProperties] = useState({});
     const [loadingJoin, setLoadingJoin] = useState(false);
@@ -80,7 +81,7 @@ export default function ShowFiles({filesA, setFilesA, filesB, setFilesB}) {
 
     const fetchFiles = async() => {
            try{
-            let res = await getFiles();
+            let res = await getJoinedFileFromHDFS();
             console.log('Response ', res);
             setFiles(res.data);
 
@@ -92,12 +93,9 @@ export default function ShowFiles({filesA, setFilesA, filesB, setFilesB}) {
     }
     useEffect(() => {
         if(!files) return;
-        let a = files['files_a'];
-        let b = files['files_b'];
 
+        let a = files['files'];
         let FAarr = [];
-        let FBarr = []
-
         /* Manipulation of A files */
         for(let el of a){
             let obj = {}
@@ -113,26 +111,9 @@ export default function ShowFiles({filesA, setFilesA, filesB, setFilesB}) {
             obj.columns = columns;
             FAarr.push(obj);
         }
-
-        /* Manipulation of A files */
-        for(let el of b){
-            let obj = {}
-            let columns = [];
-            obj.name = el.name;
-            obj.selected = false;
-            for(let col of el.columns){
-                columns.push({
-                    name: col,
-                    selected: true
-                })
-            }
-            obj.columns = columns;
-            FBarr.push(obj);
-        }
         setFilesA(FAarr)
-        setFilesB(FBarr)
-
-        console.log('FINAL FILES ', filesA, filesB)
+      
+        console.log('FINAL FILES ', filesA);
     }, [files]);
 
     const handeProperties = (event) =>{
@@ -175,75 +156,7 @@ export default function ShowFiles({filesA, setFilesA, filesB, setFilesB}) {
                 return {...obj, selected: false};
             }
         });
-
         setFilesA(newArr);
-    }
-
-       const onFileSelectedB = (event) => {
-        const { name, checked } = event.target;
-
-        const newArr = filesB.map((obj) => {
-            if (obj.name === name) {
-                return {...obj, selected: checked};
-            }
-            else{
-                return {...obj, selected: false};
-            }
-        });
-
-        setFilesB(newArr);
-    }
-
-    const join = async() => {
-        let postRes = {}
-        let objA = {};
-        let objB = {};
-
-        for(let el of filesA){
-            if(el.selected === true){
-                objA.name = el.name;
-                let cols = [];
-                for(var col of el.columns){
-                    if(col.selected) cols.push(col.name);
-                }
-                 objA.columns = cols;
-            }
-        }
-
-        for(let el of filesB){
-            if(el.selected === true){
-                objB.name = el.name;
-                let cols = [];
-                for(var col of el.columns){
-                    if(col.selected) cols.push(col.name);
-                }
-                objB.columns = cols;
-            }
-        }
-
-        if(!objA || !objB || !properties.noise){
-            setOpen(true);
-            return;
-        }
-
-        postRes.file_a = objA;
-        postRes.file_b = objB;
-        postRes.noise = properties.noise;
-        postRes.matching_field = 'NCID';
-
-
-        /* POST HERE */
-        console.log('Post Res', postRes);
-        try{
-            /* let res = await join(postRes);
-            console.log('Response ', res); */
-            const response = await axios.post(process.env.REACT_APP_URI_HOST + '/start', postRes);
-            console.log('RESPONSE ', response);
-            setResults(response);
-
-        }catch(error){
-            console.log('ERROR ', error);
-        }
     }
 
     const handleClose = (event, reason) => {
@@ -272,37 +185,13 @@ export default function ShowFiles({filesA, setFilesA, filesB, setFilesB}) {
             </div>
         )
     })
-
-    const displayBFiles = filesB?.map((item, idx) => {
-        return (
-            <div className={styles.FileWrapper} key={idx}>
-                <div className={styles.FileItem} >
-                    <p>{item.name}</p>
-                    <div className={styles.Columns}>
-                        {item.columns.map((column, index) => {return (
-                            <div key={index}>
-                                <p className='pLight'>{column.name}</p>
-                                <input type="checkbox" name={`${idx}$${column.name}$B`} checked={column.selected} onChange={onColumnSelected}/>
-                            </div>
-                        )})}
-                    </div>
-                </div>
-                <input type="checkbox" name={`${item.name}`} checked={item.selected} onChange={onFileSelectedB}/>
-            </div>
-        )
-    })
-
+    
     return (
         <ToolbarWrapper>
             {loadingJoin? <h2>LOADING RESULTS</h2> : <> {!results ? <div>
                 <div>
                 <p className={styles.MarginBottom}>Files A</p>
                     {displayAFiles}
-                </div>
-
-                <div className={styles.MarginTop}>
-                    <p className={styles.MarginBottom}>Files B</p>
-                    {displayBFiles}
                 </div>
 
                 <div className={styles.MarginTopSmall}>
@@ -329,6 +218,7 @@ export default function ShowFiles({filesA, setFilesA, filesB, setFilesB}) {
                     <p>Total Matches: {results.total_matches}</p>
                     <p>Noise: {results.noise}</p>
                 </div>
+
             }</>}
             
         </ToolbarWrapper>

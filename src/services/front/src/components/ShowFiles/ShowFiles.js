@@ -3,8 +3,9 @@ import ToolbarWrapper from '../Toolbar/Toolbar';
 import styles from './showFiles.module.css';
 import Snackbar from '@mui/material/Snackbar';
 import MuiAlert from '@mui/material/Alert';
-import { getFiles, join } from '../../service';
+import { getFiles } from '../../service';
 import axios from 'axios';
+
 
 const Alert = React.forwardRef(function Alert(props, ref) {
   return <MuiAlert elevation={6} ref={ref} variant="filled" {...props} />;
@@ -17,8 +18,8 @@ export default function ShowFiles({filesA, setFilesA}) {
     const [results, setResults] = useState(null);
     const [open, setOpen] = useState(false);
     const [files, setFiles] = useState(null);
-    
-    
+    const NAME_OF_CLUSTER = process.env.REACT_APP_NAME_OF_CLUSTER;
+
     const filesRes = {
         "files_a": [
             {
@@ -163,7 +164,7 @@ export default function ShowFiles({filesA, setFilesA}) {
         let obj = {};
 
         for(let el of filesA){
-            if(el.selected == true){
+            if(el.selected === true){
                 obj.name = el.name;
                 let cols = [];
                 for(var col of el.columns){
@@ -173,13 +174,12 @@ export default function ShowFiles({filesA, setFilesA}) {
             }
         }
 
-        if(!obj || !properties.precision || !properties.noise || !properties.matching_field){
+        if(!obj || !properties.noise || !properties.matching_field){
             setOpen(true);
             return;
         }
 
         postRes.file_a = obj;
-        postRes.prediction_size = properties.precision;
         postRes.noise = properties.noise;
         postRes.matching_field = properties.matching_field;
 
@@ -232,18 +232,17 @@ export default function ShowFiles({filesA, setFilesA}) {
         <ToolbarWrapper>
             {loadingJoin? <h2>LOADING RESULTS</h2> : <> {!results ? <div>
                 <div>
-                <p className={styles.MarginBottom}>Files A</p>
+                <p className={styles.MarginBottom}> {NAME_OF_CLUSTER} </p>
                     {displayAFiles}
                 </div>
 
                 <div className={styles.MarginTopSmall}>
-                <input placeholder='Add precision' name='precision' type='number' step={0.05} onChange={handeProperties}/>
                 <input placeholder='Add noise' name='noise' type='number' onChange={handeProperties}/>
                 <input placeholder='Add matching field' name='matching_field' type='text' onChange={handeProperties}/>
 
                 </div>
 
-                <button className={styles.MarginTopXSmall} onClick={join}>JOIN</button>
+                <button className={styles.MarginTopXSmall} onClick={join}>Transform Files</button>
 
                 <Snackbar open={open} autoHideDuration={4000} onClose={handleClose}>
                 <Alert onClose={handleClose} severity="error" sx={{width: '100%'}}>
@@ -253,7 +252,6 @@ export default function ShowFiles({filesA, setFilesA}) {
                 </div>:
                 <div>
                     <p>Size: {results.size}</p>
-                    <p>Prediction: {results.prediction}</p>
                     <p>Precision: {results.precision}</p>
                     <p>Recall: {results.recall}</p>
                     <p>TP: {results.TP}</p>

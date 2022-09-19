@@ -28,18 +28,17 @@ def main():
 @app.route("/show-files", methods=["GET"])
 @cross_origin()
 def hdfs():
-    content = request.get_json(silent=True)
-
-    if 'directory' not in content:
+    args = request.args.to_dict()
+    if ('directory' not in args) and (args['directory'] not in ['joined_data', 'matched_data', 'cluster_a_matched_data', 'cluster_b_matched_data', 'cluster_a_pretransformed_data', 'cluster_b_pretransformed_data']):
         response = app.response_class(
             status=404,
-            response=json.dumps({'message': 'The dir does not exist'}),
+            response=json.dumps({'message': 'Invalid Input. The dir does not exist'}),
             mimetype='application/json'
         )
         return response
 
     # Return 404 if path doesn't exist
-    directory = join(SPARK_DISTRIBUTED_FILE_SYSTEM + content['directory'])
+    directory = join(SPARK_DISTRIBUTED_FILE_SYSTEM + args['directory'])
 
     if not os.path.exists(directory):
         response = app.response_class(
