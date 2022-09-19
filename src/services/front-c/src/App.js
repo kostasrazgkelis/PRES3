@@ -1,7 +1,6 @@
 import './App.css';
 import { useState } from 'react';
 import ShowFiles from "./components/ShowFiles/ShowFiles.js";
-import UploadFiles from "./components/UploadFiles/UploadFiles.js";
 import Home from './components/Home/Home';
 import {
   BrowserRouter as Router, 
@@ -25,6 +24,7 @@ function App() {
     }
   ]);
   const [filesA, setFilesA] = useState(null);
+  const [filesB, setFilesB] = useState(null);
 
   const uploadCompletedFiles = () => {
     /* State */
@@ -37,9 +37,7 @@ function App() {
       <Router>
         <Routes>
           <Route path="/" element={<Home/>} />
-          <Route path="/all-files" element={<ShowFiles filesA={filesA} setFilesA={setFilesA}/>} />
-          <Route path="/hdfs" element={<ShowFiles filesA={filesA} setFilesA={setFilesA}/>} />
-          <Route path="/upload-files" element={<UploadFiles/>} />
+          <Route path="/all-files" element={<ShowFiles filesA={filesA} setFilesA={setFilesA} filesB={filesB} setFilesB={setFilesB}/>} />
         </Routes>
     </Router>
     </div>

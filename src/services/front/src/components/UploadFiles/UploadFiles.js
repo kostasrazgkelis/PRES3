@@ -5,7 +5,8 @@ import styles from './uploadFiles.module.css';
 
 export default function UploadFiles() {
     const [file, setFile] = useState(null);
-    
+    const NAME_OF_CLUSTER = process.env.REACT_APP_NAME_OF_CLUSTER;
+
     const uploadFile = async(event) => {
         console.log('On upload ', event.target.files[0]);
         let file =  event.target.files[0];
@@ -33,7 +34,7 @@ export default function UploadFiles() {
           <form method='post' >
             <div className={styles.UploadFilesWrapper}>
               <div className={styles.Cluster}>
-                <p>Upload file for Cluster</p>
+                <p>Upload files for the {NAME_OF_CLUSTER}</p>
                 <input type="file" name="uploadedFile" onChange={uploadFile} onLoad={uploadFile}  />
               </div>           
           </div>

@@ -21,14 +21,16 @@ RUN wget https://dlcdn.apache.org/spark/spark-3.2.2/spark-3.2.2-bin-hadoop3.2.tg
     mv spark-3.2.2-bin-hadoop3.2 /opt/spark && \
     rm spark-*
     
-COPY ./infrastructures/app/requirements.txt /requirements.txt
+COPY ./infrastructures/backend/requirements.txt /requirements.txt
 RUN pip3 install -r /requirements.txt
 
-COPY ./src/services/app/packages /src/app/packages
-COPY ./src/services/app/app.py /src/app/app.py
-COPY ./src/services/app/__init__.py /src/app/__init__.py
+COPY ./src/services/backend/packages /src/app/packages
+COPY ./src/services/backend/app.py /src/app/app.py
+COPY ./src/services/backend/__init__.py /src/app/__init__.py
 
 WORKDIR /src/app/
+
+RUN mkdir -p /opt/workspace/input
 
 #It defines the port number the container should expose
 

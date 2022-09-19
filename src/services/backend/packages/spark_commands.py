@@ -1,5 +1,7 @@
 from pyspark.sql import SparkSession, DataFrame
 from pyspark import SparkConf
+from pyspark.sql.functions import col
+
 from settings import SPARK_DISTRIBUTED_FILE_SYSTEM
 import socket
 import os
@@ -67,10 +69,10 @@ class ThesisSparkClass:
         return self.spark.read.csv(path=f"{SPARK_DISTRIBUTED_FILE_SYSTEM}/{file_name}", sep=",", header=True)
 
     def extract_data(self):
-        self.df_1 = self.read_csv(
-            file_name=f'cluster_a_transformed_data/{self.file_a}')
-        self.df_2 = self.read_csv(
-            file_name=f'cluster_b_transformed_data/{self.file_b}')
+        # return self.spark.read.format("org.apache.dsext.spark.datasource.rest.RestDataSource").options(**options).load()
+        # # return self.read_csv(file_name=file_name)
+        self.df_1 = self.read_csv(file_name=f'cluster_a_pretransformed_data/{self.file_a}')
+        self.df_2 = self.read_csv(file_name=f'cluster_b_pretransformed_data/{self.file_b}')
 
     def transform_data(self):
 
@@ -89,6 +91,9 @@ class ThesisSparkClass:
             where("MatchingFieldDF1==MatchingFieldDF2 and (MatchingFieldDF1 != 'Fake Index' and MatchingFieldDF2 != 'Fake Index')").\
             select('*').\
             count()
+
+        self.matched_data = self.matched_data.drop(col("MatchingFieldDF2"))
+        self.matched_data = self.matched_data.withColumnRenamed("MatchingFieldDF1", self.matching_field)
 
         false_positives = int(total_matches - true_positives)
         precision = true_positives / (true_positives + false_positives)

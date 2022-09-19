@@ -2,12 +2,14 @@ version: '3.0'
 
 services:
     front-a:
-        container_name: ${FRONT_CLUSTER_A}
+        container_name: front-cluster-a
         build:
             context: .
             dockerfile: infrastructures/front/Dockerfile
             args:
                - REACT_APP_URI_HOST=http://localhost:9200
+               - REACT_APP_HDFS_HOST=http://localhost:9500
+               - REACT_APP_NAME_OF_CLUSTER=Cluster A
         ports:
             - "3000:3000"
         environment:
@@ -22,8 +24,28 @@ services:
             - cluster-a-network
 
 
+    hdfs:
+        container_name: "hdfs"
+        build:
+            context: .
+            dockerfile: infrastructures/hdfs/Dockerfile
+        ports:
+            - "9500:9500"
+        environment:
+            - PORT=9500
+            - NAME=HDFS
+            - DEBUG=1
+        restart: always
+        env_file:
+            - .env
+        volumes:
+            - ./src/services/hdfs/:/src/app/
+            - shared-workspace:/opt/workspace
+        networks:
+            - spark-net
+
     cluster-a:
-        container_name: ${BACK_CLUSTER_A}
+        container_name: back-cluster-a
         build:
             context: .
             args:
@@ -53,6 +75,8 @@ services:
             dockerfile: infrastructures/front/Dockerfile
             args:
                 - REACT_APP_URI_HOST=http://localhost:9300
+                - REACT_APP_HDFS_HOST=http://localhost:9500
+                - REACT_APP_NAME_OF_CLUSTER=Cluster B
         ports:
             - "3001:3000"
         environment:
@@ -66,8 +90,8 @@ services:
 
 
     cluster-b:
-        container_name: cluster-b
-        build: 
+        container_name: back-cluster-b
+        build:
             context: .
             args:
                 NAME: cluster_b
@@ -93,7 +117,9 @@ services:
             context: .
             dockerfile: infrastructures/front-c/Dockerfile
             args:
-               - REACT_APP_URI_HOST=http://localhost:9000
+                - REACT_APP_URI_HOST=http://localhost:9000
+                - REACT_APP_HDFS_HOST=http://localhost:9500
+                - REACT_APP_NAME_OF_CLUSTER=Cluster C
         ports:
             - "3002:3000"
         environment:
@@ -126,14 +152,6 @@ services:
         depends_on:
             - master
 
-    # jupyter:
-    #     image: jupyter/all-spark-notebook
-    #     ports:
-    #         - "8888:8888"
-    #     volumes:
-    #         -  shared-workspace:/opt/workspace
-
-
     master:
         build:
             context: infrastructures/spark
@@ -147,24 +165,24 @@ services:
             -  shared-workspace:/opt/workspace
         networks:
             - spark-net
-
-
-    worker:
-        build:
-            context: infrastructures/spark
-            dockerfile: Dockerfile
-        environment:
-            - SPARK_WORKER_CORES=2
-            - SPARK_WORKER_MEMORY=2g
-        command: bash -c "start-worker.sh spark://master:7077 && tail -F /dev/null"
-        deploy:
-            replicas: 2
-        volumes:
-            -  shared-workspace:/opt/workspace
-        networks:
-            - spark-net
-        depends_on:
-            - master
+#
+#
+#    worker:
+#        build:
+#            context: infrastructures/spark
+#            dockerfile: Dockerfile
+#        environment:
+#            - SPARK_WORKER_CORES=1
+#            - SPARK_WORKER_MEMORY=3g
+#        command: bash -c "start-worker.sh spark://master:7077 && tail -F /dev/null"
+#        deploy:
+#            replicas: 2
+#        volumes:
+#            -  shared-workspace:/opt/workspace
+#        networks:
+#            - spark-net
+#        depends_on:
+#            - master
 
 
 volumes:    

@@ -10,14 +10,9 @@ export default function ToolbarWrapper({children}) {
                 <Link to="/"><p>Home</p></Link>
             </div>
             <div className={styles.Nav}>
-                <Link to="/upload-files"><p>Upload Files</p></Link>
-            </div>
-            <div className={styles.Nav}>
                 <Link to="/all-files"><p>All files</p></Link>
             </div>
-            <div className={styles.Nav}>
-                <Link to="/hdfs"><p>HDFS</p></Link>
-            </div>
+
         
         </div>
         <div className={styles.ChildContainer}>

@@ -3,7 +3,7 @@ import ToolbarWrapper from '../Toolbar/Toolbar';
 import styles from './showFiles.module.css';
 import Snackbar from '@mui/material/Snackbar';
 import MuiAlert from '@mui/material/Alert';
-import { getFiles } from '../../service';
+import { getJoinedFileFromHDFS } from '../../service';
 import axios from 'axios';
 
 
@@ -18,8 +18,8 @@ export default function ShowFiles({filesA, setFilesA}) {
     const [results, setResults] = useState(null);
     const [open, setOpen] = useState(false);
     const [files, setFiles] = useState(null);
-    const NAME_OF_CLUSTER = process.env.REACT_APP_NAME_OF_CLUSTER;
-
+    
+    
     const filesRes = {
         "files_a": [
             {
@@ -81,7 +81,7 @@ export default function ShowFiles({filesA, setFilesA}) {
 
     const fetchFiles = async() => {
            try{
-            let res = await getFiles();
+            let res = await getJoinedFileFromHDFS();
             console.log('Response ', res);
             setFiles(res.data);
 
@@ -159,48 +159,6 @@ export default function ShowFiles({filesA, setFilesA}) {
         setFilesA(newArr);
     }
 
-    const join = async() => {
-        let postRes = {}
-        let obj = {};
-
-        for(let el of filesA){
-            if(el.selected === true){
-                obj.name = el.name;
-                let cols = [];
-                for(var col of el.columns){
-                    if(col.selected) cols.push(col.name);
-                }
-                 obj.columns = cols;
-            }
-        }
-
-        if(!obj || !properties.noise || !properties.matching_field){
-            setOpen(true);
-            return;
-        }
-
-        postRes.file_a = obj;
-        postRes.noise = properties.noise;
-        postRes.matching_field = properties.matching_field;
-
-        /* POST HERE */
-        console.log('Post Res', postRes);
-        setLoadingJoin(true);
-        try{
-            /* let res = await join(postRes);
-            console.log('Response ', res); */
-            console.log('we are here brooo')
-            const response = await axios.post(process.env.REACT_APP_URI_HOST + '/take-data', postRes);
-            console.log('RESPONSE ', response);
-            setResults(response.data);
-            setLoadingJoin(false);
-
-        }catch(error){
-            console.log('ERROR ', error);
-            setLoadingJoin(false);
-        }
-    }
-
     const handleClose = (event, reason) => {
         if (reason === 'clickaway') {
         return;
@@ -232,7 +190,7 @@ export default function ShowFiles({filesA, setFilesA}) {
         <ToolbarWrapper>
             {loadingJoin? <h2>LOADING RESULTS</h2> : <> {!results ? <div>
                 <div>
-                <p className={styles.MarginBottom}> {NAME_OF_CLUSTER} </p>
+                <p className={styles.MarginBottom}>Files A</p>
                     {displayAFiles}
                 </div>
 
@@ -242,7 +200,7 @@ export default function ShowFiles({filesA, setFilesA}) {
 
                 </div>
 
-                <button className={styles.MarginTopXSmall} onClick={join}>Transform Files</button>
+                <button className={styles.MarginTopXSmall} onClick={join}>JOIN</button>
 
                 <Snackbar open={open} autoHideDuration={4000} onClose={handleClose}>
                 <Alert onClose={handleClose} severity="error" sx={{width: '100%'}}>
@@ -252,6 +210,7 @@ export default function ShowFiles({filesA, setFilesA}) {
                 </div>:
                 <div>
                     <p>Size: {results.size}</p>
+                    <p>Prediction: {results.prediction}</p>
                     <p>Precision: {results.precision}</p>
                     <p>Recall: {results.recall}</p>
                     <p>TP: {results.TP}</p>

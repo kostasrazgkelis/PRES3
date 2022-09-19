@@ -1,20 +1,20 @@
 """
     The backend endpoints of our web application for the service A (Alice)
 """
-from flask import Flask, flash, request, redirect, json
 import os
-from werkzeug.utils import secure_filename
-import pandas as pd
 import requests
+from flask import Flask, request, json
+import pandas as pd
+from connector import HDFSConnector
 from settings import HOST, PORT, \
     ENVIRONMENT_DEBUG, SPARK_DISTRIBUTED_FILE_SYSTEM, \
-    UPLOAD_FOLDER_A, UPLOAD_FOLDER_B, \
     ALLOWED_EXTENSIONS
 from packages.spark_commands import ThesisSparkClass
 from flask_cors import CORS, cross_origin
 
 app = Flask(__name__)
 CORS(app)
+
 
 def allowed_file(filename):
     return '.' in filename and \
@@ -45,51 +45,27 @@ def home():
 @cross_origin()
 def show_files():
     # Return 404 if path doesn't exist
-    if not os.path.exists(SPARK_DISTRIBUTED_FILE_SYSTEM + 'cluster_a_transformed_data') or \
-            not os.path.exists(SPARK_DISTRIBUTED_FILE_SYSTEM + 'cluster_b_transformed_data'):
+    if not os.path.exists(SPARK_DISTRIBUTED_FILE_SYSTEM + 'cluster_a_pretransformed_data') or \
+            not os.path.exists(SPARK_DISTRIBUTED_FILE_SYSTEM + 'cluster_b_pretransformed_data'):
         response = app.response_class(
-            status=400,
+            status=404,
             mimetype='application/json'
         )
         return response
 
     # Show directory contents
-    files_a = os.listdir(SPARK_DISTRIBUTED_FILE_SYSTEM + 'cluster_a_transformed_data')
-    files_b = os.listdir(SPARK_DISTRIBUTED_FILE_SYSTEM + 'cluster_b_transformed_data')
+    files_a = os.listdir(SPARK_DISTRIBUTED_FILE_SYSTEM + 'cluster_a_pretransformed_data')
+    files_b = os.listdir(SPARK_DISTRIBUTED_FILE_SYSTEM + 'cluster_b_pretransformed_data')
 
-    data_a = [get_data_from_file(SPARK_DISTRIBUTED_FILE_SYSTEM + 'cluster_a_transformed_data', filename=file)
+    data_a = [get_data_from_file(SPARK_DISTRIBUTED_FILE_SYSTEM + 'cluster_a_pretransformed_data', filename=file)
               for file in files_a if file.endswith('.csv')]
 
-    data_b = [get_data_from_file(SPARK_DISTRIBUTED_FILE_SYSTEM + 'cluster_b_transformed_data', filename=file)
+    data_b = [get_data_from_file(SPARK_DISTRIBUTED_FILE_SYSTEM + 'cluster_b_pretransformed_data', filename=file)
               for file in files_b if file.endswith('.csv')]
 
     data = {'files_a': data_a, 'files_b': data_b}
     response = app.response_class(
         response=json.dumps(data),
-        status=200,
-        mimetype='application/json'
-    )
-    return response
-
-
-def post_data(matching_field: str, noise: int, files: dict, cluster: str, port: int, values: dict):
-    url = f'http://{cluster}:{port}/upload_data/'
-
-    requests.post(url=url, files=files)
-    response = requests.get(f'http://{cluster}:{port}/take_data/{matching_field}/{noise}', values)
-
-    if response.status_code != 200:
-        response = app.response_class(
-            status=400,
-            mimetype='application/json'
-        )
-        return response
-
-    url_content = response.content
-    with open(f"{SPARK_DISTRIBUTED_FILE_SYSTEM}/{cluster}_download.csv", 'wb') as file:
-        file.write(url_content)
-
-    response = app.response_class(
         status=200,
         mimetype='application/json'
     )
@@ -108,14 +84,41 @@ def start():
     cluster_a_file = response['file_a']['name']
     cluster_b_file = response['file_b']['name']
 
-    spark = ThesisSparkClass(file_a=cluster_a_file,
-                             file_b=cluster_b_file,
-                             matching_field=matching_field,
-                             prediction_size=prediction_size,
-                             noise=noise)
+    # hdfs = HDFSConnector(hdfs_base_url="http://localhost:9500/")
+    #
+    # response = requests.get('http://hdfs:9500/')
+    # if response.status_code != 200:
+    #     app.logger.error('The HDFS is not connected')
+    #     response = app.response_class(
+    #         response=json.dumps({'message': "The HDFS is not connected."}),
+    #         status=400,
+    #         mimetype='application/json'
+    #     )
+    #     return response
 
-    spark.start_etl()
-    data = spark.get_metrics()
+    # if hdfs.check_hdfs() is False:
+    #     app.logger.error('The HDFS is not connected')
+    #     response = app.response_class(
+    #         response=json.dumps({'message': "The HDFS is not connected."}),
+    #         status=400,
+    #         mimetype='application/json'
+    #     )
+    #     return response
+
+    # cluster_a_file = hdfs.download_file(file=cluster_a_file)
+    # cluster_b_file = hdfs.download_file(file=cluster_b_file)
+
+    # spark = ThesisSparkClass(file_a=cluster_a_file,
+    #                          file_b=cluster_b_file,
+    #                          matching_field=matching_field,
+    #                          prediction_size=prediction_size,
+    #                          noise=noise)
+    #
+    # spark.start_etl()
+
+    data = {
+        "message": 'The join operation has finished.'
+    }
 
     response = app.response_class(
         response=json.dumps(data),
