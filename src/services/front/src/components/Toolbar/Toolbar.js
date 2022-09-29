@@ -18,7 +18,9 @@ export default function ToolbarWrapper({children}) {
             <div className={styles.Nav}>
                 <Link to="/hdfs"><p>HDFS</p></Link>
             </div>
-        
+            <div className={styles.Nav}>
+                <Link to="/request-matched-data"><p>Request Matched Data</p></Link>
+            </div>
         </div>
         <div className={styles.ChildContainer}>
             {children}
