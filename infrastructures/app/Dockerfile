@@ -30,7 +30,7 @@ COPY ./src/services/app/__init__.py /src/app/__init__.py
 COPY ./src/services/app/uploaded_files_${NAME} /src/app/uploaded_files_${NAME}
 
 WORKDIR /src/app/
-RUN mkdir -p /opt/workspace/input
+
 #It defines the port number the container should expose
 
 #Finally, in order our container to run the python 
