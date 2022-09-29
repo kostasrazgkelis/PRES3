@@ -8,8 +8,11 @@ services:
             dockerfile: infrastructures/front/Dockerfile
             args:
                - REACT_APP_URI_HOST=http://localhost:9200
+               - REACT_APP_OTHER_CLUSTER_URL=http://localhost:9300
                - REACT_APP_HDFS_HOST=http://localhost:9500
                - REACT_APP_NAME_OF_CLUSTER=Cluster A
+               - REACT_APP_NAME_OF_CLUSTER_URL=cluster_a
+               - REACT_APP_OTHER_CLUSTER=cluster_b
         ports:
             - "3000:3000"
         environment:
@@ -75,8 +78,11 @@ services:
             dockerfile: infrastructures/front/Dockerfile
             args:
                 - REACT_APP_URI_HOST=http://localhost:9300
+                - REACT_APP_OTHER_CLUSTER_URL=http://localhost:9200
                 - REACT_APP_HDFS_HOST=http://localhost:9500
                 - REACT_APP_NAME_OF_CLUSTER=Cluster B
+                - REACT_APP_NAME_OF_CLUSTER_URL=cluster_b
+                - REACT_APP_OTHER_CLUSTER=cluster_a
         ports:
             - "3001:3000"
         environment:
