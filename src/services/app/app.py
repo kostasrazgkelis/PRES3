@@ -123,7 +123,7 @@ def show_files():
     return response
 
 
-@app.route("/send-data", methods=['GET'])
+@app.route("/send-data/", methods=['GET'])
 @cross_origin()
 def send():
     response = request.args
@@ -161,8 +161,10 @@ def send():
     path = f"{SPARK_DISTRIBUTED_FILE_SYSTEM}{NAME_OF_CLUSTER}_matched_data/"
     file = [f for f in os.listdir(path) if isfile(join(path, f)) and f.endswith('.csv')][0]
 
-    return send_file(filename_or_fp=join(path, file),
-                     mimetype="text/csv",
+    path = join(path, file)
+    app.logger.info(f"TEST WE ARE HERE {path}")
+
+    return send_file(filename_or_fp=path,
                      attachment_filename=f'{NAME_OF_CLUSTER}_matched_data.csv',
                      as_attachment=True)
 
@@ -184,11 +186,11 @@ def get():
     try:
         noise = int(response['noise'])
         matching_field = response['matching_field']
-        columns = response['file_a']['columns']
-        file_name = response['file_a']['name']
+        columns = response['file']['columns']
+        file_name = response['file']['name']
     except Exception as e:
         missing_fields = [option for option in ["noise", "matching_field", "columns", "name"]
-                          if option not in response or response['file_a']]
+                          if option not in response or response['file']]
         response = app.response_class(
             status=400,
             response=json.dumps({"message": f"The are missing fields: {missing_fields} "})
