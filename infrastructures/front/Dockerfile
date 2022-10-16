@@ -1,16 +1,5 @@
 FROM node:alpine
 
-RUN mkdir /src
-
-WORKDIR /src
-
-COPY ./infrastructures/front /src
-
-RUN npm install
-RUN npm install js-file-download --save
-
-COPY ./src/services/front /src
-
 # add arguments #
 ARG REACT_APP_URI_HOST
 ARG REACT_APP_URI_HOST
@@ -25,7 +14,16 @@ ENV REACT_APP_NAME_OF_CLUSTER=$REACT_APP_NAME_OF_CLUSTER
 ENV REACT_APP_NAME_OF_CLUSTER_URL=$REACT_APP_NAME_OF_CLUSTER_URL
 ENV REACT_APP_OTHER_CLUSTER=$REACT_APP_OTHER_CLUSTER
 ENV REACT_APP_OTHER_CLUSTER_URL=$REACT_APP_OTHER_CLUSTER_URL
-
 # stop argumetns #
 
+WORKDIR /react-front
+
+COPY ./infrastructures/front /react-front
+
+RUN npm install
+RUN npm install js-file-download --save
+
+COPY ./src/services/front /react-front
+
+RUN npm run build
 CMD ["npm", "start"]
