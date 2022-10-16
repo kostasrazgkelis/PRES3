@@ -105,7 +105,7 @@ def show_files():
     # Return 404 if path doesn't exist
     if not os.path.exists(UPLOAD_FOLDER):
         response = app.response_class(
-            status=400,
+            status=404,
             mimetype='application/json'
         )
         return response
