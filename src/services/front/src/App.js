@@ -1,5 +1,5 @@
 import './App.css';
-import { useState } from 'react';
+import React, { useState } from 'react';
 import ShowFiles from "./components/ShowFiles/ShowFiles.js";
 import UploadFiles from "./components/UploadFiles/UploadFiles.js";
 import Home from './components/Home/Home';
@@ -29,8 +29,9 @@ function App() {
     }
   ]);
   const [filesA, setFilesA] = useState(null);
-  const [filesB, setFilesB] = useState(null);
-
+  const [joinedFiles, setJoinedFiles] = useState(null);
+  const [matchedFiles, setMatchedFiles] = useState(null);
+  const [transformedFiles, setTransformedFiles] = useState(null);
   const uploadCompletedFiles = () => {
     /* State */
 
@@ -43,7 +44,7 @@ function App() {
         <Routes>
           <Route path="/" element={<Home/>} />
           <Route path="/all-files" element={<ShowFiles filesA={filesA} setFilesA={setFilesA}/>} />
-          <Route path="/hdfs" element={<HdfsShowFiles filesA={filesA} setFilesA={setFilesA} filesB={filesB} setFilesB={setFilesB} />} />
+          <Route path="/hdfs" element={<HdfsShowFiles joinedFiles={joinedFiles} setJoinedFiles={setJoinedFiles} matchedFiles={matchedFiles} setMatchedFiles={setMatchedFiles} transformedFiles={transformedFiles} setTransformedFiles={setTransformedFiles}/>} />
           <Route path="/upload-files" element={<UploadFiles/>} />
           <Route path="/request-matched-data" element={<RequestMatchedData/>} />
         </Routes>
