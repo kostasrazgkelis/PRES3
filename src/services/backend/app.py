@@ -77,44 +77,44 @@ def show_files():
 def start():
     response = request.get_json()
 
-    noise = int(response['noise'])
-    matching_field = response['matching_field']
-    prediction_size = response['prediction_size']
+    noise = int(response.get('noise'))
+    matching_field = response.get('matching_field')
+    prediction_size = response.get('prediction_size')
 
     cluster_a_file = response['file_a']['name']
     cluster_b_file = response['file_b']['name']
 
-    # hdfs = HDFSConnector(hdfs_base_url="http://localhost:9500/")
-    #
-    # response = requests.get('http://hdfs:9500/')
-    # if response.status_code != 200:
-    #     app.logger.error('The HDFS is not connected')
-    #     response = app.response_class(
-    #         response=json.dumps({'message': "The HDFS is not connected."}),
-    #         status=400,
-    #         mimetype='application/json'
-    #     )
-    #     return response
+    hdfs = HDFSConnector(hdfs_base_url="http://localhost:9500/")
 
-    # if hdfs.check_hdfs() is False:
-    #     app.logger.error('The HDFS is not connected')
-    #     response = app.response_class(
-    #         response=json.dumps({'message': "The HDFS is not connected."}),
-    #         status=400,
-    #         mimetype='application/json'
-    #     )
-    #     return response
+    response = requests.get('http://hdfs:9500/')
+    if response.status_code != 200:
+        app.logger.error('The HDFS is not connected')
+        response = app.response_class(
+            response=json.dumps({'message': "The HDFS is not connected."}),
+            status=400,
+            mimetype='application/json'
+        )
+        return response
 
-    # cluster_a_file = hdfs.download_file(file=cluster_a_file)
-    # cluster_b_file = hdfs.download_file(file=cluster_b_file)
+    if hdfs.check_hdfs() is False:
+        app.logger.error('The HDFS is not connected')
+        response = app.response_class(
+            response=json.dumps({'message': "The HDFS is not connected."}),
+            status=400,
+            mimetype='application/json'
+        )
+        return response
 
-    # spark = ThesisSparkClass(file_a=cluster_a_file,
-    #                          file_b=cluster_b_file,
-    #                          matching_field=matching_field,
-    #                          prediction_size=prediction_size,
-    #                          noise=noise)
-    #
-    # spark.start_etl()
+    cluster_a_file = hdfs.download_file(file=cluster_a_file)
+    cluster_b_file = hdfs.download_file(file=cluster_b_file)
+
+    spark = ThesisSparkClass(file_a=cluster_a_file,
+                             file_b=cluster_b_file,
+                             matching_field=matching_field,
+                             prediction_size=prediction_size,
+                             noise=noise)
+
+    spark.start_etl()
 
     data = {
         "message": 'The join operation has finished.'

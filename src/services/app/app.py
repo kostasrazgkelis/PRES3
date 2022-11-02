@@ -128,9 +128,9 @@ def show_files():
 def send():
     response = request.args
 
-    matching_field: str = response['matching_field']
-    joined_data_filename: str = response['joined_data_filename']
-    file_name: str = response['file_name']
+    matching_field: str = response.get('matching_field')
+    joined_data_filename: str = response.get('joined_data_filename')
+    file_name: str = response.get('file_name')
 
     hdfs_obj = HDFSConnector()
 
@@ -144,25 +144,23 @@ def send():
 
     # response = hdfs_obj.upload_file(path=UPLOAD_FOLDER, file_name=file_name)
 
-    ##
-    # etl_object = ThesisSparkClassCheckFake(hdfs=hdfs_obj,
-    #                                        filename=file_name,
-    #                                        joined_data_filename=joined_data_filename,
-    #                                        matching_field=matching_field)
-    # result = etl_object.start_etl()
-    # if result:
-    #     app.logger.info(f"There was an error: {result}")
-    #     response = app.response_class(
-    #         status=400,
-    #         response=json.dumps({'message': 'There was an error.'})
-    #     )
-    #     return response
+    #
+    etl_object = ThesisSparkClassCheckFake(hdfs=hdfs_obj,
+                                           filename=file_name,
+                                           joined_data_filename=joined_data_filename,
+                                           matching_field=matching_field)
+    result = etl_object.start_etl()
+    if result:
+        app.logger.info(f"There was an error: {result}")
+        response = app.response_class(
+            status=400,
+            response=json.dumps({'message': 'There was an error.'})
+        )
+        return response
 
     path = f"{SPARK_DISTRIBUTED_FILE_SYSTEM}{NAME_OF_CLUSTER}_matched_data/"
     file = [f for f in os.listdir(path) if isfile(join(path, f)) and f.endswith('.csv')][0]
-
     path = join(path, file)
-    app.logger.info(f"TEST WE ARE HERE {path}")
 
     return send_file(filename_or_fp=path,
                      attachment_filename=f'{NAME_OF_CLUSTER}_matched_data.csv',
@@ -223,15 +221,13 @@ def get():
     app.logger.info("Connected to HDFS.")
 
     response = hdfs_obj.upload_file(path=UPLOAD_FOLDER, file_name=file_name)
-    if 1:  # response.status_code == 200:
-        #     # etl_object = ThesisSparkClassETLModel(hdfs=hdfs_obj,
-        #     #                                       columns=columns,
-        #     #                                       filename=file_name,
-        #     #                                       matching_field=matching_field,
-        #     #                                       noise=noise)
-        #     #
-        #     # etl_object.start_etl()
-        #
+    if response.status_code == 200:
+        etl_object = ThesisSparkClassETLModel(hdfs=hdfs_obj,
+                                              columns=columns,
+                                              filename=file_name,
+                                              matching_field=matching_field,
+                                              noise=noise)
+        etl_object.start_etl()
         response = app.response_class(
             status=200,
             response=json.dumps({'message': 'File has been transformed.'})

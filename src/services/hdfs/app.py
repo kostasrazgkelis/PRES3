@@ -69,22 +69,22 @@ def hdfs():
 @app.route("/take-file/<directory>", methods=["GET"])
 @cross_origin()
 def get(directory):
-    if directory not in ['joined_data', 'cluster_a_pretransformed_data', 'cluster_b_pretransformed_data']:
+    if directory not in ['joined_data', 'cluster_a_pretransformed_data', 'cluster_b_pretransformed_data', 'cluster_a_matched_data', 'cluster_b_matched_data']:
+        app.logger.warning(f"directory '{directory}' not found")
         response = app.response_class(
             status=400,
             response=json.dumps({'message': 'Wrong directory specified. Choose joined_data/cluster_a_pretransformed_data/cluster_b_pretransformed_data'}),
         )
         return response
 
-    content = request.get_json(silent=True)
-    if 'file' not in content:
+    file = request.args.get('file')
+
+    if file is None:
         response = app.response_class(
             status=400,
             response=json.dumps({'message': 'File not specified'}),
         )
         return response
-
-    file = content['file']
 
     path = join(join(SPARK_DISTRIBUTED_FILE_SYSTEM, directory), file)
     if isfile(path):

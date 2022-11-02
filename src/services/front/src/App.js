@@ -29,6 +29,7 @@ function App() {
     }
   ]);
   const [filesA, setFilesA] = useState(null);
+  const [filesB, setFilesB] = useState(null);
   const [joinedFiles, setJoinedFiles] = useState(null);
   const [matchedFiles, setMatchedFiles] = useState(null);
   const [transformedFiles, setTransformedFiles] = useState(null);
@@ -46,7 +47,7 @@ function App() {
           <Route path="/all-files" element={<ShowFiles filesA={filesA} setFilesA={setFilesA}/>} />
           <Route path="/hdfs" element={<HdfsShowFiles joinedFiles={joinedFiles} setJoinedFiles={setJoinedFiles} matchedFiles={matchedFiles} setMatchedFiles={setMatchedFiles} transformedFiles={transformedFiles} setTransformedFiles={setTransformedFiles}/>} />
           <Route path="/upload-files" element={<UploadFiles/>} />
-          <Route path="/request-matched-data" element={<RequestMatchedData/>} />
+          <Route path="/request-matched-data" element={<RequestMatchedData matchedFiles={matchedFiles} setMatchedFiles={setMatchedFiles}/>} />
         </Routes>
     </Router>
     </div>

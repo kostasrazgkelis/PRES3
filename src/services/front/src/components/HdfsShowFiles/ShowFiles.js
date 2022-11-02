@@ -5,6 +5,7 @@ import Snackbar from '@mui/material/Snackbar';
 import MuiAlert from '@mui/material/Alert';
 import {getJoinedFileFromHDFS, getMatchedAFromHDFS, getPretransformedAFromHDFS} from '../../service';
 import axios from "axios";
+import fileDownload from 'js-file-download'
 
 const Alert = React.forwardRef(function Alert(props, ref) {
   return <MuiAlert elevation={6} ref={ref} variant="filled" {...props} />;
@@ -12,6 +13,7 @@ const Alert = React.forwardRef(function Alert(props, ref) {
 
 export default function HdfsShowFiles({joinedFiles, setJoinedFiles, matchedFiles, setMatchedFiles, transformedFiles, setTransformedFiles}) {
 
+    const [properties, setProperties] = useState({});
     const [loadingJoin, setLoadingJoin] = useState(false);
     const [results, setResults] = useState(null);
     const [open, setOpen] = useState(false);
@@ -122,6 +124,8 @@ export default function HdfsShowFiles({joinedFiles, setJoinedFiles, matchedFiles
                              getPretransformedAFromHDFS()]).then(
                 axios.spread((...allData) => {
                     setFiles(allData)
+                    console.log('DATA from APi ', allData);
+
                 })
             )
         }catch(error){
@@ -173,12 +177,14 @@ export default function HdfsShowFiles({joinedFiles, setJoinedFiles, matchedFiles
         setOpen(false);
     };
 
-    const handleClickDownload = async (directory, file) => {
-        const postRes = {
-            "file": file
-        }
+    const handleClickDownload = async (directory, file_name) => {
+        const params = {
+            file: file_name
+        };
         try{
-            const response = await axios.get(process.env.REACT_APP_URI_HOST + "/take-file/" + directory, postRes);
+            const response = await axios.get(process.env.REACT_APP_HDFS_HOST + "/take-file/" + directory, {params}).then((response) => {
+            fileDownload(response.data, file_name)
+        })
             setResults(response);
         }catch(error){
             console.log('ERROR ', error);
@@ -192,7 +198,7 @@ export default function HdfsShowFiles({joinedFiles, setJoinedFiles, matchedFiles
                 <p>{item.name}</p>
                 <div>
                     <button className={styles.MarginTopXSmall} onClick={() => {
-                        handleClickDownload("joined_data", item.file_name)}}>Download</button>
+                        handleClickDownload("joined_data", item.name.toString() )}}>Download</button>
                 </div>
             </div>
         </div>
@@ -206,7 +212,7 @@ export default function HdfsShowFiles({joinedFiles, setJoinedFiles, matchedFiles
                 <p>{item.name}</p>
                 <div>
                     <button className={styles.MarginTopXSmall} onClick={() => {
-                        handleClickDownload(NAME_OF_CLUSTER_URL + "_matched_data", item.file_name)}}>Download</button>
+                        handleClickDownload(NAME_OF_CLUSTER_URL + "_matched_data", item.name)}}>Download</button>
                 </div>
             </div>
         </div>
@@ -220,7 +226,7 @@ export default function HdfsShowFiles({joinedFiles, setJoinedFiles, matchedFiles
                 <p>{item.name}</p>
                 <div>
                     <button className={styles.MarginTopXSmall} onClick={() => {
-                        handleClickDownload("_pretransformed_data", item.file_name)}}>Download</button>
+                        handleClickDownload(NAME_OF_CLUSTER_URL + "_pretransformed_data", item.name)}}>Download</button>
                 </div>
             </div>
         </div>
@@ -231,15 +237,15 @@ export default function HdfsShowFiles({joinedFiles, setJoinedFiles, matchedFiles
             {loadingJoin? <h2>LOADING RESULTS</h2> : <> {!results ? <div>
                 <div>
                     <p className={styles.MarginBottom}>Joined Data</p>
-                        {displayJoinedFiles}
+                    {displayJoinedFiles}
                 </div>
                 <div>
                     <p className={styles.MarginBottom}>Matched {NAME_OF_CLUSTER} Data</p>
-                        {displayMatchedData}
+                    {displayMatchedData}
                 </div>
                 <div>
                     <p className={styles.MarginBottom}>Transformed {NAME_OF_CLUSTER} Data</p>
-                        {displayTransformedData}
+                    {displayTransformedData}
                 </div>
                 <Snackbar open={open} autoHideDuration={4000} onClose={handleClose}>
                 <Alert onClose={handleClose} severity="error" sx={{width: '100%'}}>

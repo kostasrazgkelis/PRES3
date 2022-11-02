@@ -179,7 +179,7 @@ export default function ShowFiles({filesA, setFilesA}) {
             return;
         }
 
-        postRes.file_a = obj;
+        postRes.file = obj;
         postRes.noise = properties.noise;
         postRes.matching_field = properties.matching_field;
 
@@ -189,7 +189,6 @@ export default function ShowFiles({filesA, setFilesA}) {
         try{
             /* let res = await join(postRes);
             console.log('Response ', res); */
-            console.log('we are here brooo')
             const response = await axios.post(process.env.REACT_APP_URI_HOST + '/take-data', postRes);
             console.log('RESPONSE ', response);
             setResults(response.data);
@@ -227,7 +226,7 @@ export default function ShowFiles({filesA, setFilesA}) {
             </div>
         )
     })
-    
+
     return (
         <ToolbarWrapper>
             {loadingJoin? <h2>LOADING RESULTS</h2> : <> {!results ? <div>
@@ -251,13 +250,14 @@ export default function ShowFiles({filesA, setFilesA}) {
                 </Snackbar>
                 </div>:
                 <div>
-                    <p>Size: {results.size}</p>
+                    <p>The transformation of the file has finished</p>
+                    {/* <p>Size: {results.size}</p>
                     <p>Precision: {results.precision}</p>
                     <p>Recall: {results.recall}</p>
                     <p>TP: {results.TP}</p>
                     <p>FP: {results.FP}</p>
                     <p>Total Matches: {results.total_matches}</p>
-                    <p>Noise: {results.noise}</p>
+                    <p>Noise: {results.noise}</p> */}
                 </div>
 
             }</>}
