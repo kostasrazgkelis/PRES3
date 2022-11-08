@@ -2,6 +2,7 @@ import os
 import socket
 import random
 import hashlib
+
 import jellyfish
 import requests
 import json
@@ -15,8 +16,8 @@ from settings import SPARK_DISTRIBUTED_FILE_SYSTEM, NAME_OF_CLUSTER
 from connector import HDFSConnector as HDFS
 
 EXTRACT_DIRECTORY = SPARK_DISTRIBUTED_FILE_SYSTEM + "input/"
-LOAD_DIRECTORY = SPARK_DISTRIBUTED_FILE_SYSTEM + f'{NAME_OF_CLUSTER}_pretransformed_data'
-MATCHED_DIRECTORY = SPARK_DISTRIBUTED_FILE_SYSTEM + f'{NAME_OF_CLUSTER}_matched_data'
+LOAD_DIRECTORY = SPARK_DISTRIBUTED_FILE_SYSTEM + f'pretransformed_data'
+MATCHED_DIRECTORY = SPARK_DISTRIBUTED_FILE_SYSTEM + f'matched_data'
 JOINED_DIRECTORY = SPARK_DISTRIBUTED_FILE_SYSTEM + f'joined_data'
 
 
@@ -44,7 +45,7 @@ class ThesisSparkClassETLModel:
         spark_driver_host = socket.gethostname()
         self.spark_conf = SparkConf() \
             .setAll([
-            ('spark.master', 'spark://master:7077'),
+            ('spark.master', 'spark://spark-master:7077'),
             ('spark.driver.bindAddress', '0.0.0.0'),
             ('spark.driver.host', spark_driver_host),
             ('spark.app.name', NAME_OF_CLUSTER),
@@ -54,13 +55,14 @@ class ThesisSparkClassETLModel:
             ('spark.logConf', 'false'),
             ('spark.cores.max', "4"),
             ("spark.executor.memory", "1g"),
-            ('spark.driver.memory', '15g')
+            ('spark.driver.memory', '15g'),
+            ('spark.submit.pyFiles', '/src/app/udf_files.zip')
         ])
 
         self.spark = SparkSession.builder \
             .appName("pyspark-notebook") \
-            .master("spark://master:7077") \
-            .config("spark.executor.memory", "1700m") \
+            .master("spark://spark-master:7077") \
+            .config(conf=self.spark_conf) \
             .enableHiveSupport() \
             .getOrCreate()
         self.spark.sparkContext.accumulator(0)
@@ -109,9 +111,10 @@ class ThesisSparkClassETLModel:
         Returns:
 
         """
-        self.dataframe.coalesce(1).write.format('com.databricks.spark.csv'). \
-            mode('overwrite'). \
-            save(LOAD_DIRECTORY, header='true')
+        # self.dataframe.coalesce(1).write.format('com.databricks.spark.csv'). \
+        #     mode('overwrite'). \
+        #     save(LOAD_DIRECTORY, header='true')
+        self.dataframe.toPandas().to_csv(os.path.join(LOAD_DIRECTORY, 'transformed_data.csv'))
 
     def start_etl(self):
         try:
@@ -121,6 +124,7 @@ class ThesisSparkClassETLModel:
             self.spark.stop()
         except Exception as e:
             return e
+
 
 class ThesisSparkClassCheckFake(ThesisSparkClassETLModel):
 

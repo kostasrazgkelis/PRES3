@@ -29,11 +29,11 @@ class ThesisSparkClass:
         spark_driver_host = socket.gethostname()
         self.spark_conf = SparkConf() \
             .setAll([
-            ('spark.master', f'spark://master:7077'),
+            ('spark.master', f'spark://spark-master:7077'),
             ('spark.driver.bindAddress', '0.0.0.0'),
             ('spark.driver.host', spark_driver_host),
             ('spark.app.name', 'cluster_c'),
-            ('spark.submit.deployMode', 'client'),
+            ('spark.submit.deployMode', 'cluster'),
             ('spark.ui.showConsoleProgress', 'true'),
             ('spark.eventLog.enabled', 'false'),
             ('spark.logConf', 'false'),
@@ -45,7 +45,7 @@ class ThesisSparkClass:
         self.set_metrics()
         self.spark = SparkSession.builder \
             .appName("pyspark-notebook-C") \
-            .master("spark://master:7077") \
+            .master("spark://spark-master:7077") \
             .config(conf=self.spark_conf)\
             .enableHiveSupport() \
             .getOrCreate()
@@ -82,31 +82,30 @@ class ThesisSparkClass:
         self.df_1 = self.df_1.withColumnRenamed(self.matching_field, "MatchingFieldDF1")
         self.df_2 = self.df_2.withColumnRenamed(self.matching_field, "MatchingFieldDF2")
 
-        self.matched_data = self.df_1.join(
-            other=self.df_2, on=condition, how='inner').select('*')
+        self.matched_data = self.df_1.join(other=self.df_2, on=condition, how='inner').select('*')
 
-        size = int(100 * self.df_1.count() / (int(self.noise) + 100))
-        total_matches = int(self.matched_data.count())
-        true_positives = self.matched_data.\
-            where("MatchingFieldDF1==MatchingFieldDF2 and (MatchingFieldDF1 != 'Fake Index' and MatchingFieldDF2 != 'Fake Index')").\
-            select('*').\
-            count()
+        # size = int(100 * self.df_1.count() / (int(self.noise) + 100))
+        # total_matches = int(self.matched_data.count())
+        # true_positives = self.matched_data.\
+        #     where("MatchingFieldDF1==MatchingFieldDF2 and (MatchingFieldDF1 != 'Fake Index' and MatchingFieldDF2 != 'Fake Index')").\
+        #     select('*').\
+        #     count()
 
         self.matched_data = self.matched_data.drop(col("MatchingFieldDF2"))
         self.matched_data = self.matched_data.withColumnRenamed("MatchingFieldDF1", self.matching_field)
 
-        false_positives = int(total_matches - true_positives)
-        precision = true_positives / (true_positives + false_positives)
-        recall = true_positives / (float(self.prediction_size) * size)
-
-        self.metrics_dict['size'] = size
-        self.metrics_dict['total_matches'] = total_matches
-        self.metrics_dict['prediction'] = self.prediction_size
-        self.metrics_dict['precision'] = precision
-        self.metrics_dict['recall'] = recall
-        self.metrics_dict['TP'] = true_positives
-        self.metrics_dict['FP'] = false_positives
-        self.metrics_dict['noise'] = self.noise
+        # false_positives = int(total_matches - true_positives)
+        # precision = true_positives / (true_positives + false_positives)
+        # recall = true_positives / (float(self.prediction_size) * size)
+        #
+        # # self.metrics_dict['size'] = size
+        # # self.metrics_dict['total_matches'] = total_matches
+        # # self.metrics_dict['prediction'] = self.prediction_size
+        # # self.metrics_dict['precision'] = precision
+        # # self.metrics_dict['recall'] = recall
+        # # self.metrics_dict['TP'] = true_positives
+        # # self.metrics_dict['FP'] = false_positives
+        # # self.metrics_dict['noise'] = self.noise
 
     def load_data(self):
         self.matched_data.coalesce(1).write.format('com.databricks.spark.csv').mode('overwrite').save(
