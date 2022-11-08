@@ -190,9 +190,10 @@ def get():
         missing_fields = [option for option in ["noise", "matching_field", "columns", "name"]
                           if option not in response or response['file']]
         response = app.response_class(
-            status=400,
+            status=4000,
             response=json.dumps({"message": f"The are missing fields: {missing_fields} "})
         )
+        app.logger.info(f'ERROR: {e}')
         return response
 
     hdfs_obj = HDFSConnector()

@@ -84,29 +84,20 @@ def start():
     cluster_a_file = response['file_a']['name']
     cluster_b_file = response['file_b']['name']
 
-    hdfs = HDFSConnector(hdfs_base_url="http://localhost:9500/")
+    hdfs_obj = HDFSConnector()
 
-    response = requests.get('http://hdfs:9500/')
-    if response.status_code != 200:
+    if not hdfs_obj.check_hdfs():
         app.logger.error('The HDFS is not connected')
         response = app.response_class(
-            response=json.dumps({'message': "The HDFS is not connected."}),
-            status=400,
-            mimetype='application/json'
+            status=500,
+            message=json.dumps({"message": f"The HDFS did not respond."})
         )
         return response
 
-    if hdfs.check_hdfs() is False:
-        app.logger.error('The HDFS is not connected')
-        response = app.response_class(
-            response=json.dumps({'message': "The HDFS is not connected."}),
-            status=400,
-            mimetype='application/json'
-        )
-        return response
+    app.logger.info("Connected to HDFS.")
 
-    cluster_a_file = hdfs.download_file(file=cluster_a_file)
-    cluster_b_file = hdfs.download_file(file=cluster_b_file)
+    # cluster_a_file = hdfs_obj.download_file(directory='cluster_a_pretransformed_data', file=cluster_a_file)
+    # cluster_b_file = hdfs_obj.download_file(directory='cluster_b_pretransformed_data', file=cluster_b_file)
 
     spark = ThesisSparkClass(file_a=cluster_a_file,
                              file_b=cluster_b_file,

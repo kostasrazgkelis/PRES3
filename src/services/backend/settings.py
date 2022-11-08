@@ -6,3 +6,4 @@ PORT = os.environ.get("PORT")
 ENVIRONMENT_DEBUG = os.environ.get("DEBUG")
 SPARK_DISTRIBUTED_FILE_SYSTEM = '/opt/workspace/'
 ALLOWED_EXTENSIONS = {'csv'}
+HDFS = 'http://hdfs:9500/'

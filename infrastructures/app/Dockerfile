@@ -1,6 +1,6 @@
 #Defines the image of which the container 
 #is going to be based 
-FROM python:3.9
+FROM python:3.8
 
 ARG NAME
 #The containers’ copies in its storage the 
@@ -27,7 +27,7 @@ RUN pip3 install -r /requirements.txt
 COPY ./src/services/app/packages /src/app/packages
 COPY ./src/services/app/app.py /src/app/app.py
 COPY ./src/services/app/__init__.py /src/app/__init__.py
-COPY ./src/services/app/uploaded_files_${NAME} /src/app/uploaded_files_${NAME}
+COPY ./src/services/app/uploaded_files /src/app/uploaded_files
 
 WORKDIR /src/app/
 

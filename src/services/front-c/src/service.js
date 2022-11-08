@@ -1,7 +1,11 @@
 import axios from "axios";
 
 export const getFiles = async () =>
-  await axios.get(process.env.REACT_APP_URI_HOST + "/show-files", null, {});
+  await axios.get("http//localhost:9200/show-files?directory=pretransformed_data", null, {});
+
+export const getFilesB = async () =>
+  await axios.get("http//localhost:9300/show-files?directory=pretransformed_data", null, {});
+
 
 export const join = async (postRes) =>
   await axios.post(process.env.REACT_APP_URI_HOST + "/start", postRes);

@@ -1,4 +1,4 @@
-version: '3.0'
+version: '3.5'
 
 services:
     front-a:
@@ -29,26 +29,6 @@ services:
         stdin_open: true
         tty: true
 
-    hdfs:
-        container_name: "hdfs"
-        build:
-            context: .
-            dockerfile: infrastructures/hdfs/Dockerfile
-        ports:
-            - "9500:9500"
-        environment:
-            - PORT=9500
-            - NAME=HDFS
-            - DEBUG=1
-        restart: always
-        env_file:
-            - .env
-        volumes:
-            - ./src/services/hdfs/:/src/app/
-            - shared-workspace:/opt/workspace
-        networks:
-            - spark-net
-
     cluster-a:
         container_name: back-cluster-a
         build:
@@ -71,8 +51,6 @@ services:
         networks:
             - spark-net
             - cluster-a-network
-        depends_on:
-            - master
 
     front-b:
         build:
@@ -119,8 +97,6 @@ services:
         networks:
             - spark-net
             - cluster-b-network
-        depends_on:
-            - master
 
     front-c:
         build:
@@ -161,50 +137,19 @@ services:
             - shared-workspace:/opt/workspace
         networks:
             - spark-net
-        depends_on:
-            - master
-
-    master:
-        build:
-            context: infrastructures/spark
-            dockerfile: Dockerfile
-        container_name: master
-        command: bash -c "start-master.sh && tail -F /dev/null"
-        ports:
-            - "7077:7077"
-            - "8090:8080"
-        volumes:
-            -  shared-workspace:/opt/workspace
-        networks:
-            - spark-net
-
-
-    worker:
-        build:
-            context: infrastructures/spark
-            dockerfile: Dockerfile
-        environment:
-            - SPARK_WORKER_CORES=1
-            - SPARK_WORKER_MEMORY=3g
-        command: bash -c "start-worker.sh spark://master:7077 && tail -F /dev/null"
-        deploy:
-            replicas: 2
-        volumes:
-            -  shared-workspace:/opt/workspace
-        networks:
-            - spark-net
-        depends_on:
-            - master
+            - cluster-c-network
 
 
 volumes:    
     cluster-A-volume:
     cluster-B-volume:
     shared-workspace:
-        driver: local
+        external: true
+        name: pres3-spark_shared-workspace
 
 networks:
     spark-net:
+        external: true
     front-back-net:
     cluster-a-network:
     cluster-b-network:
