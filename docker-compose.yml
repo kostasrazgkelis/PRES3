@@ -117,8 +117,6 @@ services:
             - ./src/services/front-c/:/src/app/
         networks:
             - cluster-c-network
-        stdin_open: true
-        tty: true
 
     backend:
         container_name: backend

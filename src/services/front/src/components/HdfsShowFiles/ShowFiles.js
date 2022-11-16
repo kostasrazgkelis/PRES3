@@ -141,22 +141,22 @@ export default function HdfsShowFiles({joinedFiles, setJoinedFiles, matchedFiles
         let matched_data_array = [];
         let transformed_data_array = [];
 
-        if (files[0].data.files.length !== 0)
-            for(let el of files[0].data.files){
+        if (files[0].data.documents.length !== 0)
+            for(let el of files[0].data.documents){
                 let obj = {}
                 obj.name = el.name;
                 joined_data_array.push(obj);
             }
 
-        if (files[1].data.files.length !== 0)
-            for(let el of files[1].data.files){
+        if (files[1].data.documents.length !== 0)
+            for(let el of files[1].data.documents){
                 let obj = {}
                 obj.name = el.name;
                 matched_data_array.push(obj);
             }
 
-        if (files[2].data.files.length !== 0)
-            for(let el of files[2].data.files){
+        if (files[2].data.documents.length !== 0)
+            for(let el of files[2].data.documents){
                 let obj = {}
                 obj.name = el.name;
                 transformed_data_array.push(obj);

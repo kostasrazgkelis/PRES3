@@ -250,14 +250,7 @@ export default function ShowFiles({filesA, setFilesA}) {
                 </Snackbar>
                 </div>:
                 <div>
-                    <p>The transformation of the file has finished</p>
-                    {/* <p>Size: {results.size}</p>
-                    <p>Precision: {results.precision}</p>
-                    <p>Recall: {results.recall}</p>
-                    <p>TP: {results.TP}</p>
-                    <p>FP: {results.FP}</p>
-                    <p>Total Matches: {results.total_matches}</p>
-                    <p>Noise: {results.noise}</p> */}
+                    <h2>The transformation of the file has finished</h2>
                 </div>
 
             }</>}

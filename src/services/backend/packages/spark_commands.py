@@ -8,18 +8,18 @@ import os
 
 class ThesisSparkClass:
 
-    def __init__(self, 
-                file_a: str, 
-                file_b: str, 
-                matching_field: str, 
-                prediction_size: float,
-                noise: int):
+    def __init__(self,
+                 project_name: str,
+                 file_a: str,
+                 file_b: str,
+                 matching_field: str,
+                 prediction_size: float):
 
+        self.project_name = project_name
         self.file_a = file_a
         self.file_b = file_b
         self.matching_field = matching_field
         self.prediction_size = prediction_size
-        self.noise = noise
 
         self.matched_data = None
         self.metrics_dict = None
@@ -32,8 +32,8 @@ class ThesisSparkClass:
             ('spark.master', f'spark://spark-master:7077'),
             ('spark.driver.bindAddress', '0.0.0.0'),
             ('spark.driver.host', spark_driver_host),
-            ('spark.app.name', 'cluster_c'),
-            ('spark.submit.deployMode', 'cluster'),
+            ('spark.app.name', self.project_name),
+            ('spark.submit.deployMode', 'client'),
             ('spark.ui.showConsoleProgress', 'true'),
             ('spark.eventLog.enabled', 'false'),
             ('spark.logConf', 'false'),
@@ -44,11 +44,9 @@ class ThesisSparkClass:
 
         self.set_metrics()
         self.spark = SparkSession.builder \
-            .appName("pyspark-notebook-C") \
-            .master("spark://spark-master:7077") \
-            .config(conf=self.spark_conf)\
-            .enableHiveSupport() \
-            .getOrCreate()
+                                 .config(conf=self.spark_conf)\
+                                 .enableHiveSupport() \
+                                 .getOrCreate()
 
     def set_metrics(self):
         self.metrics_dict = {
@@ -71,8 +69,8 @@ class ThesisSparkClass:
     def extract_data(self):
         # return self.spark.read.format("org.apache.dsext.spark.datasource.rest.RestDataSource").options(**options).load()
         # # return self.read_csv(file_name=file_name)
-        self.df_1 = self.read_csv(file_name=f'cluster_a_pretransformed_data/{self.file_a}')
-        self.df_2 = self.read_csv(file_name=f'cluster_b_pretransformed_data/{self.file_b}')
+        self.df_1 = self.read_csv(file_name=f'pretransformed_data/{self.file_a}')
+        self.df_2 = self.read_csv(file_name=f'pretransformed_data/{self.file_b}')
 
     def transform_data(self):
 
@@ -108,8 +106,13 @@ class ThesisSparkClass:
         # # self.metrics_dict['noise'] = self.noise
 
     def load_data(self):
-        self.matched_data.coalesce(1).write.format('com.databricks.spark.csv').mode('overwrite').save(
-            SPARK_DISTRIBUTED_FILE_SYSTEM + 'joined_data', header='true')
+        # self.matched_data.coalesce(1).write.format('com.databricks.spark.csv').mode('overwrite').save(
+        #     SPARK_DISTRIBUTED_FILE_SYSTEM + 'joined_data', header='true')
+        directory = os.path.join(SPARK_DISTRIBUTED_FILE_SYSTEM + 'joined_data', f'{self.project_name.lower()}')
+        if not os.path.exists(directory):
+            os.mkdir(directory)
+        path = os.path.join(directory, 'results.csv')
+        self.matched_data.toPandas().to_csv(path, index=False)
 
     def start_etl(self):
         self.extract_data()
