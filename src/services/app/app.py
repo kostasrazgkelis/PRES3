@@ -126,12 +126,10 @@ def show_files():
 @app.route("/send-data/", methods=['GET'])
 @cross_origin()
 def send():
-    response = request.args
+    content = json.loads(request.args['data'])
 
-    project_name: str = response.get('project_name')
-
+    project_name: str = content.get('project_name')
     matching_field: str = "NCID"
-    file_name: str = response.get('file_name')
 
     hdfs_obj = HDFSConnector()
 
@@ -145,9 +143,8 @@ def send():
 
     # response = hdfs_obj.upload_file(path=UPLOAD_FOLDER, file_name=file_name)
 
-    #
     etl_object = ThesisSparkClassCheckFake(hdfs=hdfs_obj,
-                                           filename=file_name,
+                                           filename="transformed_data.csv",
                                            joined_data_filename=project_name,
                                            matching_field=matching_field)
     result = etl_object.start_etl()
@@ -159,7 +156,7 @@ def send():
         )
         return response
 
-    path = f"{SPARK_DISTRIBUTED_FILE_SYSTEM}{NAME_OF_CLUSTER}_matched_data/"
+    path = join(SPARK_DISTRIBUTED_FILE_SYSTEM, 'matched_data', project_name)
     file = [f for f in os.listdir(path) if isfile(join(path, f)) and f.endswith('.csv')][0]
     path = join(path, file)
 

@@ -136,8 +136,8 @@ class ThesisSparkClassCheckFake(ThesisSparkClassETLModel):
 
     def extract_data(self):
         self.dataframe = self.spark.read.csv(os.path.join(LOAD_DIRECTORY, self.filename), header=True)
-        self.dataframe_joined_data = self.spark.read.csv(os.path.join(JOINED_DIRECTORY, self.joined_data_filename),
-                                                         header=True)
+        path_ur = os.path.join(JOINED_DIRECTORY, self.joined_data_filename + '/results.csv')
+        self.dataframe_joined_data = self.spark.read.csv(path=path_ur, header=True)
 
     def transform_data(self):
         self.dataframe_joined_data = self.dataframe_joined_data.withColumnRenamed(self.matching_field, "MatchingField")
@@ -151,6 +151,11 @@ class ThesisSparkClassCheckFake(ThesisSparkClassETLModel):
         self.dataframe = self.dataframe.withColumnRenamed("MatchingField", self.matching_field)
 
     def load_data(self):
-        self.matched_data.coalesce(1).write.format('com.databricks.spark.csv'). \
-            mode('overwrite'). \
-            save(MATCHED_DIRECTORY, header='true')
+        # self.matched_data.coalesce(1).write.format('com.databricks.spark.csv'). \
+        #     mode('overwrite'). \
+        #     save(MATCHED_DIRECTORY, header='true')
+        directory = os.path.join(SPARK_DISTRIBUTED_FILE_SYSTEM, 'matched_data', f'{self.joined_data_filename.lower()}')
+        if not os.path.exists(directory):
+            os.mkdir(directory)
+        path_ur = os.path.join(directory, 'results.csv')
+        self.matched_data.toPandas().to_csv(path_ur, index=False)
