@@ -34,7 +34,7 @@ export default function RequestMatchedData({matchedFiles, setMatchedFiles}) {
             await axios.all([getMatchedAFromHDFS()]).then(
                 axios.spread((...allData) => {
                     setFiles(allData)
-                    console.log('DATA from APi ', files);
+                    console.log('Joined FIles: ', files);
 
                 })
             )
@@ -47,10 +47,12 @@ export default function RequestMatchedData({matchedFiles, setMatchedFiles}) {
     useEffect(() => {
         if (!files) return;
 
+        let joined_files = files[0].data
         let matched_data_array = [];
 
-        if (files[0].data.files.length !== 0)
-            for(let el of files[0].data.files){
+
+        if (joined_files.documents.length > 0)
+            for(let el of joined_files.documents){
                 let obj = {}
                 obj.name = el.name;
                 matched_data_array.push(obj);
@@ -68,11 +70,9 @@ export default function RequestMatchedData({matchedFiles, setMatchedFiles}) {
         setOpen(false);
     };
 
-    const handleClickDownload = async (directory, file ) => {
+    const handleClickDownload = async (directory, project_name ) => {
         const data = {
-            "matching_field": "NCID",
-            "joined_data_filename": "file",
-            "file_name": file,
+            "project_name": project_name,
         }
         try{
             const response = await axios.get(process.env.REACT_APP_OTHER_CLUSTER_URL + "/send-data/", { params: { data } });

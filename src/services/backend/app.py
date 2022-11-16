@@ -45,8 +45,8 @@ def home():
 @cross_origin()
 def show_files():
     # Return 404 if path doesn't exist
-    if not os.path.exists(SPARK_DISTRIBUTED_FILE_SYSTEM + 'cluster_a_pretransformed_data') or \
-            not os.path.exists(SPARK_DISTRIBUTED_FILE_SYSTEM + 'cluster_b_pretransformed_data'):
+    if not os.path.exists(SPARK_DISTRIBUTED_FILE_SYSTEM + 'pretransformed_data') or \
+            not os.path.exists(SPARK_DISTRIBUTED_FILE_SYSTEM + 'pretransformed_data'):
         response = app.response_class(
             status=404,
             mimetype='application/json'
@@ -54,13 +54,13 @@ def show_files():
         return response
 
     # Show directory contents
-    files_a = os.listdir(SPARK_DISTRIBUTED_FILE_SYSTEM + 'cluster_a_pretransformed_data')
-    files_b = os.listdir(SPARK_DISTRIBUTED_FILE_SYSTEM + 'cluster_b_pretransformed_data')
+    files_a = os.listdir(SPARK_DISTRIBUTED_FILE_SYSTEM + 'pretransformed_data')
+    files_b = os.listdir(SPARK_DISTRIBUTED_FILE_SYSTEM + 'pretransformed_data')
 
-    data_a = [get_data_from_file(SPARK_DISTRIBUTED_FILE_SYSTEM + 'cluster_a_pretransformed_data', filename=file)
+    data_a = [get_data_from_file(SPARK_DISTRIBUTED_FILE_SYSTEM + 'pretransformed_data', filename=file)
               for file in files_a if file.endswith('.csv')]
 
-    data_b = [get_data_from_file(SPARK_DISTRIBUTED_FILE_SYSTEM + 'cluster_b_pretransformed_data', filename=file)
+    data_b = [get_data_from_file(SPARK_DISTRIBUTED_FILE_SYSTEM + 'pretransformed_data', filename=file)
               for file in files_b if file.endswith('.csv')]
 
     data = {'files_a': data_a, 'files_b': data_b}
@@ -77,10 +77,9 @@ def show_files():
 def start():
     response = request.get_json()
 
-    noise = int(response.get('noise'))
     matching_field = response.get('matching_field')
     prediction_size = response.get('prediction_size')
-
+    project_name = response.get('project_name')
     cluster_a_file = response['file_a']['name']
     cluster_b_file = response['file_b']['name']
 
@@ -90,7 +89,7 @@ def start():
         app.logger.error('The HDFS is not connected')
         response = app.response_class(
             status=500,
-            message=json.dumps({"message": f"The HDFS did not respond."})
+            message=json.dumps({"message": "The HDFS did not respond."})
         )
         return response
 
@@ -99,11 +98,11 @@ def start():
     # cluster_a_file = hdfs_obj.download_file(directory='cluster_a_pretransformed_data', file=cluster_a_file)
     # cluster_b_file = hdfs_obj.download_file(directory='cluster_b_pretransformed_data', file=cluster_b_file)
 
-    spark = ThesisSparkClass(file_a=cluster_a_file,
+    spark = ThesisSparkClass(project_name=project_name,
+                             file_a=cluster_a_file,
                              file_b=cluster_b_file,
                              matching_field=matching_field,
-                             prediction_size=prediction_size,
-                             noise=noise)
+                             prediction_size=prediction_size)
 
     spark.start_etl()
 

@@ -128,8 +128,9 @@ def show_files():
 def send():
     response = request.args
 
-    matching_field: str = response.get('matching_field')
-    joined_data_filename: str = response.get('joined_data_filename')
+    project_name: str = response.get('project_name')
+
+    matching_field: str = "NCID"
     file_name: str = response.get('file_name')
 
     hdfs_obj = HDFSConnector()
@@ -147,7 +148,7 @@ def send():
     #
     etl_object = ThesisSparkClassCheckFake(hdfs=hdfs_obj,
                                            filename=file_name,
-                                           joined_data_filename=joined_data_filename,
+                                           joined_data_filename=project_name,
                                            matching_field=matching_field)
     result = etl_object.start_etl()
     if result:

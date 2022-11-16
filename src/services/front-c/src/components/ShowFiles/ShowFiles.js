@@ -3,7 +3,7 @@ import ToolbarWrapper from '../Toolbar/Toolbar';
 import styles from './showFiles.module.css';
 import Snackbar from '@mui/material/Snackbar';
 import MuiAlert from '@mui/material/Alert';
-import { getFiles, join } from '../../service';
+import { getFiles, join , getFilesB} from '../../service';
 import axios from 'axios';
 
 const Alert = React.forwardRef(function Alert(props, ref) {
@@ -79,11 +79,15 @@ export default function ShowFiles({filesA, setFilesA, filesB, setFilesB}) {
     }, []);
 
     const fetchFiles = async() => {
-           try{
-            let res = await getFiles();
-            console.log('Response ', res);
-            setFiles(res.data);
+        try{
+            await axios.all([getFiles(),
+                             getFilesB()]).then(
+                axios.spread((...allData) => {
+                    setFiles(allData)
+                    console.log('DATA from APi ', allData);
 
+                })
+            )
         }catch(error){
             setFiles(filesRes)
             console.log('ERROR ', error);
@@ -91,44 +95,51 @@ export default function ShowFiles({filesA, setFilesA, filesB, setFilesB}) {
       
     }
     useEffect(() => {
+        console.log('Files Data', files);
+
         if(!files) return;
-        let a = files['files_a'];
-        let b = files['files_b'];
+
+        let a_transformed_file = files[0].data;
+        let b_transformed_file = files[1].data;
 
         let FAarr = [];
         let FBarr = []
 
         /* Manipulation of A files */
-        for(let el of a){
-            let obj = {}
-            let columns = [];
-            obj.name = el.name;
-            obj.selected = false;
-            for(let col of el.columns){
-                columns.push({
-                    name: col,
-                    selected: true
-                })
+
+        if (a_transformed_file.documents.length > 0)
+            for(let el of a_transformed_file.documents){
+                let obj = {}
+                let columns = [];
+                obj.name = el.name;
+                obj.selected = false;
+                for(let col of el.columns){
+                    columns.push({
+                        name: col,
+                        selected: true
+                    })
+                }
+                obj.columns = columns;
+                FAarr.push(obj);
             }
-            obj.columns = columns;
-            FAarr.push(obj);
-        }
 
         /* Manipulation of A files */
-        for(let el of b){
-            let obj = {}
-            let columns = [];
-            obj.name = el.name;
-            obj.selected = false;
-            for(let col of el.columns){
-                columns.push({
-                    name: col,
-                    selected: true
-                })
+        if (b_transformed_file.documents.length > 0)
+            for(let el of b_transformed_file.documents){
+                let obj = {}
+                let columns = [];
+                obj.name = el.name;
+                obj.selected = false;
+                for(let col of el.columns){
+                    columns.push({
+                        name: col,
+                        selected: true
+                    })
+                }
+                obj.columns = columns;
+                FBarr.push(obj);
             }
-            obj.columns = columns;
-            FBarr.push(obj);
-        }
+
         setFilesA(FAarr)
         setFilesB(FBarr)
 
@@ -136,8 +147,8 @@ export default function ShowFiles({filesA, setFilesA, filesB, setFilesB}) {
     }, [files]);
 
     const handeProperties = (event) =>{
-        const { name, value } = event.target;
-        console.log('HANDLE CHANGES ', name, value);
+        const { project_name, name, value } = event.target;
+        console.log('HANDLE CHANGES ', name, value, project_name);
         var obj = {...properties, [name]: value}
         setProperties(obj)
     }
@@ -221,28 +232,32 @@ export default function ShowFiles({filesA, setFilesA, filesB, setFilesB}) {
             }
         }
 
-        if(!objA || !objB || !properties.noise){
+        if(!objA || !objB || !properties.project_name){
             setOpen(true);
             return;
         }
 
         postRes.file_a = objA;
         postRes.file_b = objB;
-        postRes.noise = properties.noise;
         postRes.matching_field = 'NCID';
-
+        postRes.project_name = properties.project_name;
 
         /* POST HERE */
         console.log('Post Res', postRes);
+        setLoadingJoin(true);
         try{
             /* let res = await join(postRes);
             console.log('Response ', res); */
             const response = await axios.post(process.env.REACT_APP_URI_HOST + '/start', postRes);
             console.log('RESPONSE ', response);
             setResults(response);
+            setLoadingJoin(false);
+
 
         }catch(error){
             console.log('ERROR ', error);
+            setLoadingJoin(false);
+
         }
     }
 
@@ -306,8 +321,9 @@ export default function ShowFiles({filesA, setFilesA, filesB, setFilesB}) {
                 </div>
 
                 <div className={styles.MarginTopSmall}>
-                <input placeholder='Add noise' name='noise' type='number' onChange={handeProperties}/>
-                <input placeholder='Add matching field' name='matching_field' type='text' onChange={handeProperties}/>
+                    <input placeholder='Name of Project' name='project_name' type='text' onChange={handeProperties}/>
+                    <input placeholder='Add noise' name='noise' type='number' onChange={handeProperties}/>
+                    <input placeholder='Add matching field' name='matching_field' type='text' onChange={handeProperties}/>
 
                 </div>
 
@@ -315,19 +331,12 @@ export default function ShowFiles({filesA, setFilesA, filesB, setFilesB}) {
 
                 <Snackbar open={open} autoHideDuration={4000} onClose={handleClose}>
                 <Alert onClose={handleClose} severity="error" sx={{width: '100%'}}>
-                You must selected one file of each category and fill the prediction size and noise!
+                    You must selected one file of each category and fill the prediction size and noise!
                 </Alert>
                 </Snackbar>
                 </div>:
                 <div>
-                    <p>Size: {results.size}</p>
-                    <p>Prediction: {results.prediction}</p>
-                    <p>Precision: {results.precision}</p>
-                    <p>Recall: {results.recall}</p>
-                    <p>TP: {results.TP}</p>
-                    <p>FP: {results.FP}</p>
-                    <p>Total Matches: {results.total_matches}</p>
-                    <p>Noise: {results.noise}</p>
+                    <h2>The files have been joined</h2>
                 </div>
             }</>}
             
