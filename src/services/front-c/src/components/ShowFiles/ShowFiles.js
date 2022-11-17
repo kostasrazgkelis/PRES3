@@ -322,7 +322,6 @@ export default function ShowFiles({filesA, setFilesA, filesB, setFilesB}) {
 
                 <div className={styles.MarginTopSmall}>
                     <input placeholder='Name of Project' name='project_name' type='text' onChange={handeProperties}/>
-                    <input placeholder='Add noise' name='noise' type='number' onChange={handeProperties}/>
                     <input placeholder='Add matching field' name='matching_field' type='text' onChange={handeProperties}/>
 
                 </div>

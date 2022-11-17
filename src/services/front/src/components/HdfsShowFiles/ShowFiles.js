@@ -120,7 +120,6 @@ export default function HdfsShowFiles({joinedFiles, setJoinedFiles, matchedFiles
     const fetchFiles = async () => {
         try{
             await axios.all([getJoinedFileFromHDFS(),
-                             getMatchedAFromHDFS(),
                              getPretransformedAFromHDFS()]).then(
                 axios.spread((...allData) => {
                     setFiles(allData)
@@ -138,7 +137,6 @@ export default function HdfsShowFiles({joinedFiles, setJoinedFiles, matchedFiles
         if (!files) return;
 
         let joined_data_array = [];
-        let matched_data_array = [];
         let transformed_data_array = [];
 
         if (files[0].data.documents.length !== 0)
@@ -152,18 +150,10 @@ export default function HdfsShowFiles({joinedFiles, setJoinedFiles, matchedFiles
             for(let el of files[1].data.documents){
                 let obj = {}
                 obj.name = el.name;
-                matched_data_array.push(obj);
-            }
-
-        if (files[2].data.documents.length !== 0)
-            for(let el of files[2].data.documents){
-                let obj = {}
-                obj.name = el.name;
                 transformed_data_array.push(obj);
             }
 
         setJoinedFiles(joined_data_array)
-        setMatchedFiles(matched_data_array)
         setTransformedFiles(transformed_data_array)
 
     }, [files]);
@@ -191,6 +181,40 @@ export default function HdfsShowFiles({joinedFiles, setJoinedFiles, matchedFiles
         }
     };
 
+    const handleClickDelete = async (directory, file_name) => {
+        const params = {
+            file: file_name
+        };
+        try{
+            const response = await axios.delete(process.env.REACT_APP_HDFS_HOST + "/take-file/" + directory, {params}).then((response) => {
+        })
+            setResults(response);
+            console.log(file_name + ' has been deleted');
+
+            var index = 0
+            var files
+
+            if (directory === 'joined_data') {
+                index = joinedFiles.indexOf(file_name)
+                files = setJoinedFiles
+
+            }
+            else {
+                index = transformedFiles.indexOf(file_name)
+                files = setTransformedFiles
+            }
+
+            console.log(joinedFiles + 'asdas');
+
+            files((current) =>
+                current.filter((projects) => projects.name !== file_name)
+            );
+
+        }catch(error){
+            console.log('ERROR ', error);
+        }
+    };
+
     const displayJoinedFiles = joinedFiles?.map((item, idx) => {
     return (
         <div className={styles.FileWrapper} key={idx}>
@@ -200,19 +224,9 @@ export default function HdfsShowFiles({joinedFiles, setJoinedFiles, matchedFiles
                     <button className={styles.MarginTopXSmall} onClick={() => {
                         handleClickDownload("joined_data", item.name.toString() )}}>Download</button>
                 </div>
-            </div>
-        </div>
-        )
-    })
-
-    const displayMatchedData = matchedFiles?.map((item, idx) => {
-    return (
-        <div className={styles.FileWrapper} key={idx}>
-            <div className={styles.FileItem} >
-                <p>{item.name}</p>
                 <div>
                     <button className={styles.MarginTopXSmall} onClick={() => {
-                        handleClickDownload(NAME_OF_CLUSTER_URL + "_matched_data", item.name)}}>Download</button>
+                        handleClickDelete("joined_data", item.name.toString() )}}>Delete</button>
                 </div>
             </div>
         </div>
@@ -226,7 +240,11 @@ export default function HdfsShowFiles({joinedFiles, setJoinedFiles, matchedFiles
                 <p>{item.name}</p>
                 <div>
                     <button className={styles.MarginTopXSmall} onClick={() => {
-                        handleClickDownload(NAME_OF_CLUSTER_URL + "_pretransformed_data", item.name)}}>Download</button>
+                        handleClickDownload("pretransformed_data", item.name.toString() )}}>Download</button>
+                </div>
+                <div>
+                    <button className={styles.MarginTopXSmall} onClick={() => {
+                        handleClickDelete("pretransformed_data", item.name.toString() )}}>Delete</button>
                 </div>
             </div>
         </div>
@@ -238,10 +256,6 @@ export default function HdfsShowFiles({joinedFiles, setJoinedFiles, matchedFiles
                 <div>
                     <p className={styles.MarginBottom}>Joined Data</p>
                     {displayJoinedFiles}
-                </div>
-                <div>
-                    <p className={styles.MarginBottom}>Matched {NAME_OF_CLUSTER} Data</p>
-                    {displayMatchedData}
                 </div>
                 <div>
                     <p className={styles.MarginBottom}>Transformed {NAME_OF_CLUSTER} Data</p>

@@ -143,7 +143,8 @@ def send():
 
     # response = hdfs_obj.upload_file(path=UPLOAD_FOLDER, file_name=file_name)
 
-    etl_object = ThesisSparkClassCheckFake(hdfs=hdfs_obj,
+    etl_object = ThesisSparkClassCheckFake(project_name=project_name,
+                                           hdfs=hdfs_obj,
                                            filename="transformed_data.csv",
                                            joined_data_filename=project_name,
                                            matching_field=matching_field)
@@ -221,7 +222,8 @@ def get():
 
     response = hdfs_obj.upload_file(path=UPLOAD_FOLDER, file_name=file_name)
     if response.status_code == 200:
-        etl_object = ThesisSparkClassETLModel(hdfs=hdfs_obj,
+        etl_object = ThesisSparkClassETLModel(project_name=NAME_OF_CLUSTER + '_transformation_data',
+                                              hdfs=hdfs_obj,
                                               columns=columns,
                                               filename=file_name,
                                               matching_field=matching_field,

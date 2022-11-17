@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react'
-import { getMatchedAFromHDFS } from '../../service';
+import {getJoinedFileFromHDFS, getMatchedAFromHDFS} from '../../service';
 import ToolbarWrapper from '../Toolbar/Toolbar';
 import styles from "./requestMatchedData.module.css";
 import axios from 'axios';
@@ -31,7 +31,7 @@ export default function RequestMatchedData({matchedFiles, setMatchedFiles}) {
 
     const fetchFiles = async () => {
         try{
-            await axios.all([getMatchedAFromHDFS()]).then(
+            await axios.all([getJoinedFileFromHDFS()]).then(
                 axios.spread((...allData) => {
                     setFiles(allData)
                     console.log('Joined FIles: ', files);
@@ -70,7 +70,7 @@ export default function RequestMatchedData({matchedFiles, setMatchedFiles}) {
         setOpen(false);
     };
 
-    const handleClickDownload = async (directory, project_name ) => {
+    const handleClickRequestData = async (directory, project_name ) => {
         const data = {
             "project_name": project_name,
         }
@@ -90,7 +90,7 @@ export default function RequestMatchedData({matchedFiles, setMatchedFiles}) {
                     <p>{item.name}</p>
                     <div>
                     <button className={styles.MarginTopXSmall} onClick={() => {
-                        handleClickDownload("matched_data", item.name)}}>Download</button>
+                         handleClickRequestData("matched_data", item.name)}}>Request Data</button>
                     </div>
                 </div>
             </div>
