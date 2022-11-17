@@ -77,7 +77,6 @@ def show_files():
 def start():
     response = request.get_json()
 
-    matching_field = response.get('matching_field')
     prediction_size = response.get('prediction_size')
     project_name = response.get('project_name')
     cluster_a_file = response['file_a']['name']
@@ -101,7 +100,6 @@ def start():
     spark = ThesisSparkClass(project_name=project_name,
                              file_a=cluster_a_file,
                              file_b=cluster_b_file,
-                             matching_field=matching_field,
                              prediction_size=prediction_size)
 
     spark.start_etl()
