@@ -239,7 +239,6 @@ export default function ShowFiles({filesA, setFilesA, filesB, setFilesB}) {
 
         postRes.file_a = objA;
         postRes.file_b = objB;
-        postRes.matching_field = 'NCID';
         postRes.project_name = properties.project_name;
 
         /* POST HERE */
@@ -322,8 +321,6 @@ export default function ShowFiles({filesA, setFilesA, filesB, setFilesB}) {
 
                 <div className={styles.MarginTopSmall}>
                     <input placeholder='Name of Project' name='project_name' type='text' onChange={handeProperties}/>
-                    <input placeholder='Add matching field' name='matching_field' type='text' onChange={handeProperties}/>
-
                 </div>
 
                 <button className={styles.MarginTopXSmall} onClick={join}>JOIN</button>
