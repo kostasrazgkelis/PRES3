@@ -3,7 +3,7 @@ import ToolbarWrapper from '../Toolbar/Toolbar';
 import styles from './showFiles.module.css';
 import Snackbar from '@mui/material/Snackbar';
 import MuiAlert from '@mui/material/Alert';
-import {getJoinedFileFromHDFS, getMatchedAFromHDFS, getPretransformedAFromHDFS} from '../../service';
+import {getJoinedFileFromHDFS, getPretransformedAFromHDFS} from '../../service';
 import axios from "axios";
 import fileDownload from 'js-file-download'
 
@@ -173,7 +173,7 @@ export default function HdfsShowFiles({joinedFiles, setJoinedFiles, matchedFiles
         };
         try{
             const response = await axios.get(process.env.REACT_APP_HDFS_HOST + "/take-file/" + directory, {params}).then((response) => {
-            fileDownload(response.data, file_name)
+            fileDownload(response.data, 'download.csv')
         })
             setResults(response);
         }catch(error){
@@ -195,12 +195,10 @@ export default function HdfsShowFiles({joinedFiles, setJoinedFiles, matchedFiles
             var files
 
             if (directory === 'joined_data') {
-                index = joinedFiles.indexOf(file_name)
                 files = setJoinedFiles
 
             }
             else {
-                index = transformedFiles.indexOf(file_name)
                 files = setTransformedFiles
             }
 
@@ -250,6 +248,7 @@ export default function HdfsShowFiles({joinedFiles, setJoinedFiles, matchedFiles
         </div>
         )
     })
+
     return (
         <ToolbarWrapper>
             {loadingJoin? <h2>LOADING RESULTS</h2> : <> {!results ? <div>
@@ -257,6 +256,7 @@ export default function HdfsShowFiles({joinedFiles, setJoinedFiles, matchedFiles
                     <p className={styles.MarginBottom}>Joined Data</p>
                     {displayJoinedFiles}
                 </div>
+                <br></br>
                 <div>
                     <p className={styles.MarginBottom}>Transformed {NAME_OF_CLUSTER} Data</p>
                     {displayTransformedData}

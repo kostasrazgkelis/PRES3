@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react'
-import {getJoinedFileFromHDFS, getMatchedAFromHDFS} from '../../service';
+import {getJoinedFileFromHDFS} from '../../service';
 import ToolbarWrapper from '../Toolbar/Toolbar';
 import styles from "./requestMatchedData.module.css";
 import axios from 'axios';
@@ -99,21 +99,21 @@ export default function RequestMatchedData({matchedFiles, setMatchedFiles}) {
 
   return (
     <ToolbarWrapper>
-        {loadingJoin? <h2> Request matched data from {NAME_OF_OTHER_CLUSTER} </h2> : <> {!results ? <div>
-        <div>
-            <p className={styles.MarginTop}> Results </p>
-            {displayMatchedData}
-        </div>
-        <Snackbar open={open} autoHideDuration={4000} onClose={handleClose}>
-        <Alert onClose={handleClose} severity="error" sx={{width: '100%'}}>
-        You must selected one file of each category and fill the prediction size and noise!
-        </Alert>
-        </Snackbar>
-        </div>:
-        <div>
-        </div>
+        {loadingJoin? <h2> Request matched data from </h2> : <> {!results ? <div>
+            <div>
+                <p className={styles.MarginTop}> Results </p>
+                {displayMatchedData}
+            </div>
+            <Snackbar open={open} autoHideDuration={4000} onClose={handleClose}>
+            <Alert onClose={handleClose} severity="error" sx={{width: '100%'}}>
+            You must selected one file of each category and fill the prediction size and noise!
+            </Alert>
+            </Snackbar>
+            </div>:
+            <div>
+            </div>
         }</>}
-    </ToolbarWrapper>
 
+    </ToolbarWrapper>
   )
 }
