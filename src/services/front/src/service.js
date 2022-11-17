@@ -11,7 +11,7 @@ export const getPretransformedAFromHDFS = async () =>
   await axios.get("http://localhost:9500/show-files?directory=pretransformed_data", null, {});
 
 export const getMatchedAFromHDFS = async () =>
-  await axios.get("http://localhost:9500/show-files?directory=joined_data", null, {});
+  await axios.get("http://localhost:9500/show-files?directory=matched_data", null, {});
 
 export const uploadFiles = async (file) =>
   await axios.post(process.env.REACT_APP_URI_HOST + "/upload-file", file, {

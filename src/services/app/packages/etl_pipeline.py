@@ -4,15 +4,12 @@ import random
 import hashlib
 
 import jellyfish
-import requests
-import json
-from pyspark.context import SparkContext as sc
 from pyspark.sql.functions import udf, col
 from pyspark.sql.types import StringType
-from pyspark.sql import SparkSession, DataFrame
+from pyspark.sql import SparkSession
 from pyspark import SparkConf
 
-from settings import SPARK_DISTRIBUTED_FILE_SYSTEM, NAME_OF_CLUSTER
+from settings import SPARK_DISTRIBUTED_FILE_SYSTEM
 from connector import HDFSConnector as HDFS
 
 EXTRACT_DIRECTORY = SPARK_DISTRIBUTED_FILE_SYSTEM + "input/"
@@ -29,11 +26,13 @@ class ThesisSparkClassETLModel:
     """
 
     def __init__(self,
+                 project_name: str,
                  hdfs: HDFS,
                  filename: str,
                  matching_field: str,
                  columns: list = None,
                  noise: int = None):
+        self.project_name = project_name
         self.hdfs_obj = hdfs
         self.matching_field = matching_field
         self.filename = filename
@@ -48,7 +47,7 @@ class ThesisSparkClassETLModel:
             ('spark.master', 'spark://spark-master:7077'),
             ('spark.driver.bindAddress', '0.0.0.0'),
             ('spark.driver.host', spark_driver_host),
-            ('spark.app.name', NAME_OF_CLUSTER),
+            ('spark.app.name', self.project_name),
             ('spark.submit.deployMode', 'client'),
             ('spark.ui.showConsoleProgress', 'true'),
             ('spark.eventLog.enabled', 'false'),
@@ -59,9 +58,7 @@ class ThesisSparkClassETLModel:
             ('spark.submit.pyFiles', '/src/app/udf_files.zip')
         ])
 
-        self.spark = SparkSession.builder \
-            .appName("pyspark-notebook") \
-            .master("spark://spark-master:7077") \
+        self.spark = SparkSession.builder\
             .config(conf=self.spark_conf) \
             .enableHiveSupport() \
             .getOrCreate()
@@ -128,8 +125,8 @@ class ThesisSparkClassETLModel:
 
 class ThesisSparkClassCheckFake(ThesisSparkClassETLModel):
 
-    def __init__(self, hdfs: HDFS, filename: str, matching_field: str, joined_data_filename: str):
-        super().__init__(hdfs, filename, matching_field)
+    def __init__(self, project_name: str, hdfs: HDFS, filename: str, matching_field: str, joined_data_filename: str):
+        super().__init__(project_name, hdfs, filename, matching_field)
         self.joined_data_filename = joined_data_filename
         self.dataframe_joined_data = None
         self.matched_data = None
