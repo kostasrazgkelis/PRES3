@@ -7,10 +7,10 @@ In order to make a realistic scenario we have created 3 repositories:
 
 
 # This the setup for the spark cluster in each VM
-1) https://github.com/kostasrazgkelis/PRES3-Spark
+https://github.com/kostasrazgkelis/PRES3-Spark
 
 # The web app repository for Bob/Alice
-2# https://github.com/kostasrazgkelis/PRES-3-Alice
+https://github.com/kostasrazgkelis/PRES-3-Alice
 
 # The web app repository for Carol
-3# https://github.com/kostasrazgkelis/PRES3-Carol
+https://github.com/kostasrazgkelis/PRES3-Carol
